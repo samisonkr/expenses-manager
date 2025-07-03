@@ -1,4 +1,3 @@
-
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -34,6 +33,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [colorTheme, _setColorTheme] = useState<ThemeId>("default");
   const [themeMode, _setThemeMode] = useState<ThemeMode>("system");
 
+  // Load saved themes from localStorage on mount
   useEffect(() => {
     const storedColorTheme = localStorage.getItem("app-color-theme") as ThemeId;
     if (storedColorTheme && themes.some((t) => t.id === storedColorTheme)) {
@@ -50,40 +50,49 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Effect to apply color theme and explicit light/dark modes
   useEffect(() => {
     const root = window.document.documentElement;
 
-    // Remove all theme classes
+    // Apply color theme
     themes.forEach((t) => {
       root.classList.remove(`theme-${t.id}`);
     });
-
-    // Apply color theme class to html root
     root.classList.add(`theme-${colorTheme}`);
 
-    // Apply dark/light class to html root
-    const isDark =
-      themeMode === "dark" ||
-      (themeMode === "system" &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches);
-
-    root.classList.toggle("dark", isDark);
+    // Handle explicit light/dark modes
+    // The 'system' mode is handled in a separate effect
+    if (themeMode === 'light') {
+      root.classList.remove('dark');
+    } else if (themeMode === 'dark') {
+      root.classList.add('dark');
+    }
   }, [colorTheme, themeMode]);
 
-  // Listener for system theme changes
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
-    const handleChange = () => {
-      if (themeMode === "system") {
-        const root = window.document.documentElement;
-        root.classList.toggle("dark", mediaQuery.matches);
-      }
+  // Effect to handle 'system' mode and listen for OS-level changes
+  useEffect(() => {
+    if (themeMode !== 'system') {
+      return;
+    }
+
+    const root = window.document.documentElement;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const handleSystemChange = (e: MediaQueryListEvent) => {
+      root.classList.toggle('dark', e.matches);
     };
 
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
+    // Set initial state for system mode
+    root.classList.toggle('dark', mediaQuery.matches);
+    
+    mediaQuery.addEventListener('change', handleSystemChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleSystemChange);
+    };
   }, [themeMode]);
+
 
   const value = {
     colorTheme,
