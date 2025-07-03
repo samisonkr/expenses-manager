@@ -9,9 +9,6 @@ export const metadata: Metadata = {
   title: "Expenses Manager",
   description: "Your personal expense manager, now installable on your device.",
   manifest: "/manifest.json",
-  icons: {
-    apple: "/logo.png",
-  },
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "white" },
     { media: "(prefers-color-scheme: dark)", color: "black" },
