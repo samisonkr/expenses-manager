@@ -1,3 +1,5 @@
+"use client";
+
 import { CreditCard, Landmark, Wallet } from "lucide-react";
 import {
   Card,
@@ -5,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { accounts, expenses, getPaymentMethodName } from "@/lib/data";
+import { accounts, expenses, getPaymentMethodName, categories } from "@/lib/data";
 import {
   Table,
   TableBody,
@@ -14,6 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { Cell, Pie, PieChart } from "recharts";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-US", {
@@ -32,6 +41,27 @@ export default function DashboardPage() {
     .reduce((sum, acc) => sum + acc.balance, 0);
 
   const recentExpenses = expenses.slice(0, 5);
+
+  const expenseByCategory = expenses.reduce((acc, expense) => {
+    const category = categories.find((c) => c.id === expense.categoryId);
+    if (category) {
+      acc[category.name] = (acc[category.name] || 0) + expense.amount;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  const chartData = Object.entries(expenseByCategory).map(([name, value]) => ({
+    name,
+    value: Math.round(value),
+  }));
+
+  const chartConfig = chartData.reduce((acc, { name }, index) => {
+    acc[name] = {
+      label: name,
+      color: `hsl(var(--chart-${(index % 5) + 1}))`,
+    };
+    return acc;
+  }, {} as ChartConfig);
 
   return (
     <div className="flex flex-1 flex-col gap-6">
@@ -88,40 +118,76 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <div>
-        <h2 className="font-headline text-xl font-bold md:text-2xl mb-4">
-          Recent Expenses
-        </h2>
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Description</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Payment Method</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentExpenses.map((expense) => (
-                <TableRow key={expense.id}>
-                  <TableCell className="font-medium">
-                    {expense.description}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(expense.date).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    {getPaymentMethodName(expense.paymentMethodId)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatCurrency(expense.amount)}
-                  </TableCell>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <h2 className="font-headline text-xl font-bold md:text-2xl mb-4">
+            Recent Expenses
+          </h2>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Payment Method</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+              </TableHeader>
+              <TableBody>
+                {recentExpenses.map((expense) => (
+                  <TableRow key={expense.id}>
+                    <TableCell className="font-medium">
+                      {expense.description}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(expense.date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {getPaymentMethodName(expense.paymentMethodId)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(expense.amount)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </div>
+        <div className="lg:col-span-2">
+          <h2 className="font-headline text-xl font-bold md:text-2xl mb-4">
+            Expenses by Category
+          </h2>
+          <Card>
+            <CardContent className="pt-6">
+              <ChartContainer
+                config={chartConfig}
+                className="mx-auto aspect-square max-h-[300px]"
+              >
+                <PieChart>
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Pie
+                    data={chartData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={60}
+                    strokeWidth={5}
+                  >
+                    {chartData.map((entry) => (
+                      <Cell
+                        key={`cell-${entry.name}`}
+                        fill={entry.name in chartConfig ? chartConfig[entry.name].color : ''}
+                      />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
