@@ -7,49 +7,92 @@ export const themes = [
   { id: "forest", name: "Forest" },
   { id: "sunset", name: "Sunset" },
   { id: "ocean", name: "Ocean" },
+  { id: "yellow", name: "Yellow" },
 ] as const;
 
 export type ThemeId = (typeof themes)[number]["id"];
+export type ThemeMode = "light" | "dark" | "system";
 
 type ThemeProviderState = {
-  theme: ThemeId;
-  setTheme: (theme: ThemeId) => void;
+  colorTheme: ThemeId;
+  setColorTheme: (theme: ThemeId) => void;
+  themeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => void;
 };
 
 const initialState: ThemeProviderState = {
-  theme: "default",
-  setTheme: () => null,
+  colorTheme: "default",
+  setColorTheme: () => null,
+  themeMode: "system",
+  setThemeMode: () => null,
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<ThemeId>("default");
+  const [colorTheme, _setColorTheme] = useState<ThemeId>("default");
+  const [themeMode, _setThemeMode] = useState<ThemeMode>("system");
 
   useEffect(() => {
-    const storedTheme = localStorage.getItem("theme") as ThemeId;
-    if (storedTheme && themes.some((t) => t.id === storedTheme)) {
-      setTheme(storedTheme);
+    const storedColorTheme = localStorage.getItem("app-color-theme") as ThemeId;
+    if (storedColorTheme && themes.some((t) => t.id === storedColorTheme)) {
+      _setColorTheme(storedColorTheme);
+    }
+    const storedThemeMode = localStorage.getItem(
+      "app-theme-mode"
+    ) as ThemeMode;
+    if (
+      storedThemeMode &&
+      ["light", "dark", "system"].includes(storedThemeMode)
+    ) {
+      _setThemeMode(storedThemeMode);
     }
   }, []);
 
   useEffect(() => {
     const body = window.document.body;
+    const root = window.document.documentElement;
 
+    // Apply color theme class to body
     themes.forEach((t) => {
       body.classList.remove(`theme-${t.id}`);
     });
+    body.classList.add(`theme-${colorTheme}`);
 
-    if (theme) {
-      body.classList.add(`theme-${theme}`);
-    }
-  }, [theme]);
+    // Apply dark/light class to html
+    const isDark =
+      themeMode === "dark" ||
+      (themeMode === "system" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+    root.classList.toggle("dark", isDark);
+  }, [colorTheme, themeMode]);
+
+  // Listener for system theme changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const handleChange = () => {
+      if (themeMode === "system") {
+        const root = window.document.documentElement;
+        root.classList.toggle("dark", mediaQuery.matches);
+      }
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, [themeMode]);
 
   const value = {
-    theme,
-    setTheme: (newTheme: ThemeId) => {
-      localStorage.setItem("theme", newTheme);
-      setTheme(newTheme);
+    colorTheme,
+    setColorTheme: (newColorTheme: ThemeId) => {
+      localStorage.setItem("app-color-theme", newColorTheme);
+      _setColorTheme(newColorTheme);
+    },
+    themeMode,
+    setThemeMode: (newThemeMode: ThemeMode) => {
+      localStorage.setItem("app-theme-mode", newThemeMode);
+      _setThemeMode(newThemeMode);
     },
   };
 
