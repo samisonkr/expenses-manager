@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   BookOpen,
-  PlusCircle,
   BarChart2,
   Settings,
   TrendingUp,
   PiggyBank,
+  TrendingDown,
 } from "lucide-react";
 
 import {
@@ -28,8 +28,8 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/journal", label: "Journal", icon: BookOpen },
-  { href: "/add-expense", label: "Add Expense", icon: PlusCircle },
-  { href: "/add-income", label: "Add Income", icon: TrendingUp },
+  { href: "/expenses", label: "Expenses", icon: TrendingDown },
+  { href: "/incomes", label: "Incomes", icon: TrendingUp },
   { href: "/insights", label: "Insights", icon: BarChart2 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
