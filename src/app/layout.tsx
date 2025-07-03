@@ -7,7 +7,15 @@ import { ThemeProvider } from "@/components/theme/theme-provider";
 
 export const metadata: Metadata = {
   title: "LedgerPlus",
-  description: "Your personal expense manager.",
+  description: "Your personal expense manager, now installable on your device.",
+  manifest: "/manifest.json",
+  icons: {
+    apple: "/icon-192x192.svg",
+  },
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "white" },
+    { media: "(prefers-color-scheme: dark)", color: "black" },
+  ],
 };
 
 export default function RootLayout({
