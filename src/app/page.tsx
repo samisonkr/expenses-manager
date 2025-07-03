@@ -70,57 +70,6 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <Card className="mb-6 bg-yellow-100 border-yellow-300 dark:bg-yellow-900/50 dark:border-yellow-700">
-        <CardHeader>
-          <CardTitle className="font-headline text-xl font-bold md:text-2xl text-yellow-800 dark:text-yellow-200">
-            How to Test on Your Phone
-          </CardTitle>
-          <CardDescription className="text-yellow-700 dark:text-yellow-300">
-            I can't show you an image directly, but here is a guide inside the
-            app.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm space-y-4 text-yellow-800 dark:text-yellow-200">
-          <p>
-            Look at the{" "}
-            <span className="font-bold">
-              very bottom of this entire browser window
-            </span>
-            . You should see a panel. This is the{" "}
-            <span className="font-bold">Terminal Panel</span>.
-          </p>
-          <div className="p-4 border rounded-md bg-background/50 border-yellow-300/50">
-            <p className="font-bold">Step 1: Open a New Terminal</p>
-            <p className="mt-1">
-              In that bottom panel, find the `+` icon to open a new terminal
-              session. It's usually on the right side of the terminal tabs.
-            </p>
-            <pre className="mt-2 p-2 bg-muted/50 rounded-md text-xs">
-              TERMINAL&nbsp;&nbsp;&nbsp;PROBLEMS&nbsp;&nbsp;&nbsp;OUTPUT&nbsp;&nbsp;&nbsp;DEBUG
-              CONSOLE{" "}
-              <span className="font-bold text-lg text-primary ml-4">+</span>
-            </pre>
-          </div>
-          <div className="p-4 border rounded-md bg-background/50 border-yellow-300/50">
-            <p className="font-bold">Step 2: Run the Tunnel Command</p>
-            <p className="mt-1">
-              Click into the new terminal window and type this command, then
-              press Enter:
-            </p>
-            <pre className="mt-2 p-2 bg-muted/50 rounded-md font-mono">
-              npm run tunnel
-            </pre>
-          </div>
-          <div className="p-4 border rounded-md bg-background/50 border-yellow-300/50">
-            <p className="font-bold">Step 3: Open the URL on Your Phone</p>
-            <p className="mt-1">
-              The terminal will show you a URL that starts with `https`. Open
-              that URL on your phone's browser.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
       <h1 className="font-headline text-2xl font-bold md:text-3xl">
         Dashboard
       </h1>
