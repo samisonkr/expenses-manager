@@ -1,24 +1,21 @@
-
 {
-  "name": "LedgerPlus",
-  "short_name": "LedgerPlus",
-  "description": "Your personal expense manager.",
+  "name": "Expenses Manager",
+  "short_name": "ExpensesMgr",
+  "description": "Your personal expense manager, now installable on your device.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#407BFF",
+  "theme_color": "#000000",
   "icons": [
     {
-      "src": "/icon-192x192.svg",
+      "src": "/logo.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
-      "src": "/icon-512x512.svg",
+      "src": "/logo.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "type": "image/png"
     }
   ]
 }

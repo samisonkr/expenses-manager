@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Home,
@@ -8,7 +9,6 @@ import {
   PlusCircle,
   BarChart2,
   Settings,
-  Wallet,
   TrendingUp,
 } from "lucide-react";
 
@@ -47,7 +47,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             asChild
           >
             <Link href="/" className="flex items-center gap-2">
-              <Wallet className="h-6 w-6 text-primary" />
+              <Image
+                src="/logo.png"
+                alt="Expenses Manager Logo"
+                width={28}
+                height={28}
+                className="h-7 w-7"
+              />
               <span className="group-data-[collapsible=icon]:hidden">
                 Expenses Manager
               </span>
