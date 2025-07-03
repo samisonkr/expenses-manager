@@ -1,4 +1,4 @@
-import type { Account, Category, Expense, PaymentMethod } from "./types";
+import type { Account, Category, Expense, Income, PaymentMethod } from "./types";
 
 export const accounts: Account[] = [
   { id: "acc_cash", name: "Cash", type: "cash", balance: 500 },
@@ -27,6 +27,7 @@ export const categories: Category[] = [
   {
     id: "cat_food",
     name: "Food & Dining",
+    type: "expense",
     subcategories: [
       { id: "sub_groceries", name: "Groceries" },
       { id: "sub_restaurants", name: "Restaurants" },
@@ -36,6 +37,7 @@ export const categories: Category[] = [
   {
     id: "cat_transport",
     name: "Transportation",
+    type: "expense",
     subcategories: [
       { id: "sub_gas", name: "Gasoline" },
       { id: "sub_public", name: "Public Transit" },
@@ -45,6 +47,7 @@ export const categories: Category[] = [
   {
     id: "cat_shopping",
     name: "Shopping",
+    type: "expense",
     subcategories: [
       { id: "sub_clothes", name: "Clothing" },
       { id: "sub_electronics", name: "Electronics" },
@@ -54,11 +57,39 @@ export const categories: Category[] = [
   {
     id: "cat_bills",
     name: "Bills & Utilities",
+    type: "expense",
     subcategories: [
       { id: "sub_rent", name: "Rent" },
       { id: "sub_internet", name: "Internet" },
       { id: "sub_phone", name: "Phone Bill" },
     ],
+  },
+];
+
+export const incomeCategories: Category[] = [
+  {
+    id: "cat_salary",
+    name: "Salary",
+    type: "income",
+    subcategories: [{ id: "sub_salary_monthly", name: "Monthly" }],
+  },
+  {
+    id: "cat_bonus",
+    name: "Bonus",
+    type: "income",
+    subcategories: [{ id: "sub_bonus_performance", name: "Performance" }],
+  },
+  {
+    id: "cat_gift",
+    name: "Gift",
+    type: "income",
+    subcategories: [{ id: "sub_gift_received", name: "Received" }],
+  },
+  {
+    id: "cat_investment",
+    name: "Investment",
+    type: "income",
+    subcategories: [{ id: "sub_investment_dividends", name: "Dividends" }],
   },
 ];
 
@@ -119,10 +150,33 @@ export const expenses: Expense[] = [
   },
 ];
 
+export const incomes: Income[] = [
+  {
+    id: "inc_1",
+    date: "2024-07-01",
+    description: "Monthly Salary",
+    amount: 4000,
+    categoryId: "cat_salary",
+    subcategoryId: "sub_salary_monthly",
+    paymentMethodId: "pm_debit1",
+  },
+  {
+    id: "inc_2",
+    date: "2024-07-15",
+    description: "Birthday Gift",
+    amount: 100,
+    categoryId: "cat_gift",
+    subcategoryId: "sub_gift_received",
+    paymentMethodId: "pm_cash",
+  },
+];
+
+const allCategories = [...categories, ...incomeCategories];
+
 export const getCategoryName = (id: string) =>
-  categories.find((c) => c.id === id)?.name ?? "N/A";
+  allCategories.find((c) => c.id === id)?.name ?? "N/A";
 export const getSubcategoryName = (catId: string, subId: string) =>
-  categories
+  allCategories
     .find((c) => c.id === catId)
     ?.subcategories.find((s) => s.id === subId)?.name ?? "N/A";
 export const getPaymentMethodName = (id: string) =>

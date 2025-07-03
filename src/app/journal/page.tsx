@@ -15,10 +15,12 @@ import {
 } from "@/components/ui/table";
 import {
   expenses,
+  incomes,
   getCategoryName,
   getSubcategoryName,
   getPaymentMethodName,
 } from "@/lib/data";
+import { cn } from "@/lib/utils";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-US", {
@@ -28,6 +30,11 @@ const formatCurrency = (amount: number) => {
 };
 
 export default function JournalPage() {
+  const transactions = [
+    ...expenses.map((e) => ({ ...e, type: "expense" as const })),
+    ...incomes.map((i) => ({ ...i, type: "income" as const })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
   return (
     <div className="flex flex-1 flex-col gap-6">
       <h1 className="font-headline text-2xl font-bold md:text-3xl">Journal</h1>
@@ -40,52 +47,43 @@ export default function JournalPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[120px]">Date</TableHead>
-                <TableHead>Account / Description</TableHead>
+                <TableHead>Description</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead className="text-right">Debit</TableHead>
-                <TableHead className="text-right">Credit</TableHead>
+                <TableHead>Account</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {expenses.map((expense) => {
-                const category = getCategoryName(expense.categoryId);
+              {transactions.map((tx) => {
+                const category = getCategoryName(tx.categoryId);
                 const subcategory = getSubcategoryName(
-                  expense.categoryId,
-                  expense.subcategoryId
+                  tx.categoryId,
+                  tx.subcategoryId
                 );
-                const paymentMethod = getPaymentMethodName(
-                  expense.paymentMethodId
-                );
-
                 return (
-                  <React.Fragment key={expense.id}>
-                    <TableRow className="bg-muted/20">
-                      <TableCell>
-                        {new Date(expense.date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {expense.description}
-                      </TableCell>
-                      <TableCell>
-                        {category}: {subcategory}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(expense.amount)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono"></TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell></TableCell>
-                      <TableCell className="pl-8 text-muted-foreground">
-                        {paymentMethod}
-                      </TableCell>
-                      <TableCell></TableCell>
-                      <TableCell className="text-right font-mono"></TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(expense.amount)}
-                      </TableCell>
-                    </TableRow>
-                  </React.Fragment>
+                  <TableRow key={tx.id}>
+                    <TableCell>
+                      {new Date(tx.date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="font-medium">{tx.description}</TableCell>
+                    <TableCell>
+                      {category}: {subcategory}
+                    </TableCell>
+                    <TableCell>
+                      {getPaymentMethodName(tx.paymentMethodId)}
+                    </TableCell>
+                    <TableCell
+                      className={cn(
+                        "text-right font-mono",
+                        tx.type === "income"
+                          ? "text-primary"
+                          : "text-destructive"
+                      )}
+                    >
+                      {tx.type === "income" ? "+" : "-"}
+                      {formatCurrency(tx.amount)}
+                    </TableCell>
+                  </TableRow>
                 );
               })}
             </TableBody>

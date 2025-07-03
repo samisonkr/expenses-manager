@@ -15,6 +15,7 @@ export interface PaymentMethod {
 export interface Category {
   id: string;
   name: string;
+  type: "expense" | "income";
   subcategories: Subcategory[];
 }
 
@@ -31,4 +32,14 @@ export interface Expense {
   categoryId: string;
   subcategoryId: string;
   paymentMethodId: string;
+}
+
+export interface Income {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  categoryId: string;
+  subcategoryId: string;
+  paymentMethodId: string; // The account where income is deposited
 }

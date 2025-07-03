@@ -1,5 +1,6 @@
+import { CategoryManagement } from "@/components/settings/category-management";
 import { PaymentMethods } from "@/components/settings/payment-methods";
-import { accounts } from "@/lib/data";
+import { accounts, categories, incomeCategories } from "@/lib/data";
 
 export default function SettingsPage() {
   return (
@@ -8,6 +9,10 @@ export default function SettingsPage() {
         Settings
       </h1>
       <PaymentMethods accounts={accounts} />
+      <CategoryManagement
+        expenseCategories={categories}
+        incomeCategories={incomeCategories}
+      />
     </div>
   );
 }
