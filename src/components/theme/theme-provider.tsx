@@ -1,3 +1,4 @@
+
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -50,16 +51,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const body = window.document.body;
     const root = window.document.documentElement;
 
-    // Apply color theme class to body
+    // Remove all theme classes
     themes.forEach((t) => {
-      body.classList.remove(`theme-${t.id}`);
+      root.classList.remove(`theme-${t.id}`);
     });
-    body.classList.add(`theme-${colorTheme}`);
 
-    // Apply dark/light class to html
+    // Apply color theme class to html root
+    root.classList.add(`theme-${colorTheme}`);
+
+    // Apply dark/light class to html root
     const isDark =
       themeMode === "dark" ||
       (themeMode === "system" &&
