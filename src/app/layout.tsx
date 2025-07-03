@@ -6,7 +6,7 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 
 export const metadata: Metadata = {
-  title: "LedgerPlus",
+  title: "Expenses Manager",
   description: "Your personal expense manager, now installable on your device.",
   manifest: "/manifest.json",
   icons: {
