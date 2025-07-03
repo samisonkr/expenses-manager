@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -32,7 +33,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -47,30 +47,9 @@ import {
 import { PlusCircle, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import {
-  getCategoryName,
-  getSubcategoryName,
-  getPaymentMethodName,
-} from "@/lib/data";
-import type { Expense, Category, PaymentMethod } from "@/lib/types";
+import type { Expense } from "@/lib/types";
 import { ExpenseForm } from "./expense-form";
-import { z } from "zod";
-
-const expenseFormSchema = z.object({
-  description: z.string().min(2, "Description must be at least 2 characters."),
-  amount: z.coerce.number().positive("Amount must be a positive number."),
-  date: z.date(),
-  categoryId: z.string().min(1, "Please select a category."),
-  subcategoryId: z.string().min(1, "Please select a subcategory."),
-  paymentMethodId: z.string().min(1, "Please select a payment method."),
-});
-type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
-
-interface ExpensesListProps {
-  initialExpenses: Expense[];
-  categories: Category[];
-  paymentMethods: PaymentMethod[];
-}
+import { useAppData } from "@/hooks/use-app-data";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-US", {
@@ -79,12 +58,8 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-export function ExpensesList({
-  initialExpenses,
-  categories,
-  paymentMethods,
-}: ExpensesListProps) {
-  const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
+export function ExpensesList() {
+  const { expenses, deleteExpense, getCategoryName, getSubcategoryName, getPaymentMethodName } = useAppData();
   const [filter, setFilter] = useState<"daily" | "weekly" | "monthly">(
     "monthly"
   );
@@ -114,20 +89,12 @@ export function ExpensesList({
 
   const handleDelete = () => {
     if (!expenseToDelete) return;
-    setExpenses(expenses.filter((e) => e.id !== expenseToDelete.id));
+    deleteExpense(expenseToDelete.id);
     toast({ title: "Expense Deleted", description: `"${expenseToDelete.description}" was removed.` });
     setExpenseToDelete(null);
   };
-  
-  const handleEditSubmit = (values: ExpenseFormValues) => {
-    if (!expenseToEdit) return;
-    const updatedExpense = {
-        ...expenseToEdit,
-        ...values,
-        date: values.date.toISOString().split("T")[0],
-    };
-    setExpenses(expenses.map(e => e.id === updatedExpense.id ? updatedExpense : e));
-    toast({ title: "Expense Updated", description: "Your expense has been successfully updated."});
+
+  const handleSave = () => {
     setIsEditDialogOpen(false);
     setExpenseToEdit(null);
   }
@@ -227,8 +194,8 @@ export function ExpensesList({
           </DialogHeader>
           {expenseToEdit && (
             <ExpenseForm 
-                categories={categories}
-                paymentMethods={paymentMethods}
+                expense={expenseToEdit}
+                onSave={handleSave}
             />
           )}
         </DialogContent>

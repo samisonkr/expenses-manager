@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -8,7 +9,8 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 
 import { cn } from "@/lib/utils";
-import type { Category, PaymentMethod } from "@/lib/types";
+import type { Income } from "@/lib/types";
+import { useAppData } from "@/hooks/use-app-data";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,11 +50,15 @@ const incomeFormSchema = z.object({
 type IncomeFormValues = z.infer<typeof incomeFormSchema>;
 
 interface IncomeFormProps {
-  categories: Category[];
-  paymentMethods: PaymentMethod[];
+  income?: Income;
+  onSave: () => void;
 }
 
-export function IncomeForm({ categories, paymentMethods }: IncomeFormProps) {
+export function IncomeForm({ income, onSave }: IncomeFormProps) {
+  const { incomeCategories, paymentMethods, addIncome, updateIncome } = useAppData();
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
+    income?.categoryId ?? ""
+  );
   const [subcategories, setSubcategories] = useState<
     { id: string; name: string }[]
   >([]);
@@ -60,30 +66,46 @@ export function IncomeForm({ categories, paymentMethods }: IncomeFormProps) {
 
   const form = useForm<IncomeFormValues>({
     resolver: zodResolver(incomeFormSchema),
-    defaultValues: {
-      description: "",
-      amount: 0,
-      date: new Date(),
-      categoryId: "",
-      subcategoryId: "",
-      paymentMethodId: "",
-    },
+    defaultValues: income
+      ? { ...income, date: new Date(income.date) }
+      : {
+          description: "",
+          amount: 0,
+          date: new Date(),
+          categoryId: "",
+          subcategoryId: "",
+          paymentMethodId: "",
+        },
   });
+
+  useEffect(() => {
+    if (selectedCategoryId) {
+      const category = incomeCategories.find((c) => c.id === selectedCategoryId);
+      setSubcategories(category ? category.subcategories : []);
+    }
+  }, [selectedCategoryId, incomeCategories]);
 
   const handleCategoryChange = (categoryId: string) => {
     form.setValue("categoryId", categoryId);
     form.setValue("subcategoryId", ""); // Reset subcategory
-    const category = categories.find((c) => c.id === categoryId);
-    setSubcategories(category ? category.subcategories : []);
+    setSelectedCategoryId(categoryId);
   };
 
   function onSubmit(data: IncomeFormValues) {
-    console.log(data);
-    toast({
-      title: "Income Added!",
-      description: `Added "${data.description}" for ${formatCurrency(data.amount)}.`,
-    });
-    form.reset();
+    if (income) {
+      updateIncome({ ...data, id: income.id });
+      toast({
+        title: "Income Updated!",
+        description: `Updated "${data.description}" for ${formatCurrency(data.amount)}.`,
+      });
+    } else {
+      addIncome(data);
+      toast({
+        title: "Income Added!",
+        description: `Added "${data.description}" for ${formatCurrency(data.amount)}.`,
+      });
+    }
+    onSave();
   }
 
   const formatCurrency = (amount: number) => {
@@ -179,7 +201,7 @@ export function IncomeForm({ categories, paymentMethods }: IncomeFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {categories.map((cat) => (
+                  {incomeCategories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
                     </SelectItem>
@@ -244,7 +266,7 @@ export function IncomeForm({ categories, paymentMethods }: IncomeFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit">Add Income</Button>
+        <Button type="submit">{income ? 'Save Changes' : 'Add Income'}</Button>
       </form>
     </Form>
   );

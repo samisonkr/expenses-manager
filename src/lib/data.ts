@@ -170,14 +170,3 @@ export const incomes: Income[] = [
     paymentMethodId: "pm_cash",
   },
 ];
-
-const allCategories = [...categories, ...incomeCategories];
-
-export const getCategoryName = (id: string) =>
-  allCategories.find((c) => c.id === id)?.name ?? "N/A";
-export const getSubcategoryName = (catId: string, subId: string) =>
-  allCategories
-    .find((c) => c.id === catId)
-    ?.subcategories.find((s) => s.id === subId)?.name ?? "N/A";
-export const getPaymentMethodName = (id: string) =>
-  paymentMethods.find((p) => p.id === id)?.name ?? "N/A";

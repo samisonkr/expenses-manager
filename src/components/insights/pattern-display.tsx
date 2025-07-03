@@ -1,16 +1,21 @@
+
 "use client";
 
 import { useState } from "react";
 import { Lightbulb } from "lucide-react";
 
 import { discoverExpensePatterns } from "@/ai/flows/discover-patterns";
-import { expenses } from "@/lib/data"; // Using mock data
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { Expense } from "@/lib/types";
 
-export function PatternDisplay() {
+interface PatternDisplayProps {
+  expenses: Expense[];
+}
+
+export function PatternDisplay({ expenses }: PatternDisplayProps) {
   const [patterns, setPatterns] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();

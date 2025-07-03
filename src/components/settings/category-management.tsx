@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import type { Category, Subcategory } from "@/lib/types";
+import type { Category } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -39,18 +40,16 @@ import { useToast } from "@/hooks/use-toast";
 interface CategoryManagementProps {
   expenseCategories: Category[];
   incomeCategories: Category[];
+  onAddCategory: (category: Omit<Category, 'id' | 'subcategories'>) => void;
+  onAddSubcategory: (parentCategory: Category, subcategoryName: string) => void;
 }
 
 export function CategoryManagement({
-  expenseCategories: initialExpenseCategories,
-  incomeCategories: initialIncomeCategories,
+  expenseCategories,
+  incomeCategories,
+  onAddCategory,
+  onAddSubcategory,
 }: CategoryManagementProps) {
-  const [expenseCats, setExpenseCats] = useState<Category[]>(
-    initialExpenseCategories
-  );
-  const [incomeCats, setIncomeCats] = useState<Category[]>(
-    initialIncomeCategories
-  );
 
   const { toast } = useToast();
 
@@ -70,22 +69,10 @@ export function CategoryManagement({
       toast({ title: "Category name cannot be empty", variant: "destructive" });
       return;
     }
-    const newCategory: Category = {
-      id: `cat_${newCategoryName
-        .toLowerCase()
-        .replace(/\s+/g, "_")}_${Date.now()}`,
-      name: newCategoryName.trim(),
-      type: currentCategoryType,
-      subcategories: [],
-    };
-    if (currentCategoryType === "expense") {
-      setExpenseCats([...expenseCats, newCategory]);
-    } else {
-      setIncomeCats([...incomeCats, newCategory]);
-    }
+    onAddCategory({ name: newCategoryName.trim(), type: currentCategoryType });
     toast({
       title: "Category Added",
-      description: `Added "${newCategory.name}" category.`,
+      description: `Added "${newCategoryName.trim()}" category.`,
     });
     setNewCategoryName("");
     setIsCategoryDialogOpen(false);
@@ -99,29 +86,10 @@ export function CategoryManagement({
       });
       return;
     }
-    const newSubcategory: Subcategory = {
-      id: `sub_${newSubcategoryName
-        .toLowerCase()
-        .replace(/\s+/g, "_")}_${Date.now()}`,
-      name: newSubcategoryName.trim(),
-    };
-
-    const updateCategories = (categories: Category[]) =>
-      categories.map((cat) =>
-        cat.id === parentCategory.id
-          ? { ...cat, subcategories: [...cat.subcategories, newSubcategory] }
-          : cat
-      );
-
-    if (parentCategory.type === "expense") {
-      setExpenseCats(updateCategories(expenseCats));
-    } else {
-      setIncomeCats(updateCategories(incomeCats));
-    }
-
+    onAddSubcategory(parentCategory, newSubcategoryName.trim());
     toast({
       title: "Subcategory Added",
-      description: `Added "${newSubcategory.name}" to "${parentCategory.name}".`,
+      description: `Added "${newSubcategoryName.trim()}" to "${parentCategory.name}".`,
     });
     setNewSubcategoryName("");
     setParentCategory(null);
@@ -205,10 +173,10 @@ export function CategoryManagement({
           <TabsTrigger value="income">Income Categories</TabsTrigger>
         </TabsList>
         <TabsContent value="expense" className="mt-4">
-          {renderCategoryList(expenseCats, "expense")}
+          {renderCategoryList(expenseCategories, "expense")}
         </TabsContent>
         <TabsContent value="income" className="mt-4">
-          {renderCategoryList(incomeCats, "income")}
+          {renderCategoryList(incomeCategories, "income")}
         </TabsContent>
       </Tabs>
 

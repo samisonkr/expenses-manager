@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -44,30 +45,10 @@ import {
 import { PlusCircle, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import {
-  getCategoryName,
-  getSubcategoryName,
-  getPaymentMethodName,
-} from "@/lib/data";
-import type { Income, Category, PaymentMethod } from "@/lib/types";
+import type { Income } from "@/lib/types";
 import { IncomeForm } from "./income-form";
-import { z } from "zod";
+import { useAppData } from "@/hooks/use-app-data";
 
-const incomeFormSchema = z.object({
-  description: z.string().min(2, "Description must be at least 2 characters."),
-  amount: z.coerce.number().positive("Amount must be a positive number."),
-  date: z.date(),
-  categoryId: z.string().min(1, "Please select a category."),
-  subcategoryId: z.string().min(1, "Please select a subcategory."),
-  paymentMethodId: z.string().min(1, "Please select a payment method."),
-});
-type IncomeFormValues = z.infer<typeof incomeFormSchema>;
-
-interface IncomesListProps {
-  initialIncomes: Income[];
-  categories: Category[];
-  paymentMethods: PaymentMethod[];
-}
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-US", {
@@ -76,12 +57,8 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-export function IncomesList({
-  initialIncomes,
-  categories,
-  paymentMethods,
-}: IncomesListProps) {
-  const [incomes, setIncomes] = useState<Income[]>(initialIncomes);
+export function IncomesList() {
+  const { incomes, deleteIncome, getCategoryName, getSubcategoryName, getPaymentMethodName } = useAppData();
   const [filter, setFilter] = useState<"monthly" | "yearly">("monthly");
   const [incomeToEdit, setIncomeToEdit] = useState<Income | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -107,20 +84,12 @@ export function IncomesList({
 
   const handleDelete = () => {
     if (!incomeToDelete) return;
-    setIncomes(incomes.filter((i) => i.id !== incomeToDelete.id));
+    deleteIncome(incomeToDelete.id);
     toast({ title: "Income Deleted", description: `"${incomeToDelete.description}" was removed.` });
     setIncomeToDelete(null);
   };
-
-  const handleEditSubmit = (values: IncomeFormValues) => {
-    if (!incomeToEdit) return;
-    const updatedIncome = {
-      ...incomeToEdit,
-      ...values,
-      date: values.date.toISOString().split('T')[0],
-    };
-    setIncomes(incomes.map(i => i.id === updatedIncome.id ? updatedIncome : i));
-    toast({ title: "Income Updated", description: "Your income has been successfully updated." });
+  
+  const handleSave = () => {
     setIsEditDialogOpen(false);
     setIncomeToEdit(null);
   };
@@ -214,8 +183,8 @@ export function IncomesList({
           </DialogHeader>
           {incomeToEdit && (
             <IncomeForm 
-                categories={categories}
-                paymentMethods={paymentMethods}
+              income={incomeToEdit}
+              onSave={handleSave}
             />
           )}
         </DialogContent>

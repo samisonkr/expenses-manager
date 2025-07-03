@@ -1,3 +1,5 @@
+
+"use client";
 import React from "react";
 import {
   Card,
@@ -13,13 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  expenses,
-  incomes,
-  getCategoryName,
-  getSubcategoryName,
-  getPaymentMethodName,
-} from "@/lib/data";
+import { useAppData } from "@/hooks/use-app-data";
 import { cn } from "@/lib/utils";
 
 const formatCurrency = (amount: number) => {
@@ -30,6 +26,8 @@ const formatCurrency = (amount: number) => {
 };
 
 export default function JournalPage() {
+  const { expenses, incomes, getCategoryName, getSubcategoryName, getPaymentMethodName } = useAppData();
+
   const transactions = [
     ...expenses.map((e) => ({ ...e, type: "expense" as const })),
     ...incomes.map((i) => ({ ...i, type: "income" as const })),

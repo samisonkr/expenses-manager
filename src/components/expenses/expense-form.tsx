@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -8,8 +9,9 @@ import { CalendarIcon, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 
 import { cn } from "@/lib/utils";
-import type { Category, PaymentMethod } from "@/lib/types";
+import type { Category, Expense } from "@/lib/types";
 import { suggestSubcategories } from "@/ai/flows/suggest-subcategories";
+import { useAppData } from "@/hooks/use-app-data";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,12 +51,15 @@ const expenseFormSchema = z.object({
 type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
 
 interface ExpenseFormProps {
-  categories: Category[];
-  paymentMethods: PaymentMethod[];
+  expense?: Expense;
+  onSave: () => void;
 }
 
-export function ExpenseForm({ categories, paymentMethods }: ExpenseFormProps) {
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+export function ExpenseForm({ expense, onSave }: ExpenseFormProps) {
+  const { categories, paymentMethods, addExpense, updateExpense } = useAppData();
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
+    expense?.categoryId ?? ""
+  );
   const [subcategories, setSubcategories] = useState<
     { id: string; name: string }[]
   >([]);
@@ -63,22 +68,29 @@ export function ExpenseForm({ categories, paymentMethods }: ExpenseFormProps) {
 
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseFormSchema),
-    defaultValues: {
-      description: "",
-      amount: 0,
-      date: new Date(),
-      categoryId: "",
-      subcategoryId: "",
-      paymentMethodId: "",
-    },
+    defaultValues: expense
+      ? { ...expense, date: new Date(expense.date) }
+      : {
+          description: "",
+          amount: 0,
+          date: new Date(),
+          categoryId: "",
+          subcategoryId: "",
+          paymentMethodId: "",
+        },
   });
+
+  useEffect(() => {
+    if (selectedCategoryId) {
+      const category = categories.find((c) => c.id === selectedCategoryId);
+      setSubcategories(category ? category.subcategories : []);
+    }
+  }, [selectedCategoryId, categories]);
 
   const handleCategoryChange = (categoryId: string) => {
     form.setValue("categoryId", categoryId);
     form.setValue("subcategoryId", ""); // Reset subcategory
     setSelectedCategoryId(categoryId);
-    const category = categories.find((c) => c.id === categoryId);
-    setSubcategories(category ? category.subcategories : []);
   };
 
   const handleSuggestSubcategories = async () => {
@@ -131,12 +143,20 @@ export function ExpenseForm({ categories, paymentMethods }: ExpenseFormProps) {
   };
 
   function onSubmit(data: ExpenseFormValues) {
-    console.log(data);
-    toast({
-      title: "Expense Added!",
-      description: `Added "${data.description}" for ${formatCurrency(data.amount)}.`,
-    });
-    form.reset();
+    if (expense) {
+      updateExpense({ ...data, id: expense.id });
+      toast({
+        title: "Expense Updated!",
+        description: `Updated "${data.description}" for ${formatCurrency(data.amount)}.`,
+      });
+    } else {
+      addExpense(data);
+      toast({
+        title: "Expense Added!",
+        description: `Added "${data.description}" for ${formatCurrency(data.amount)}.`,
+      });
+    }
+    onSave();
   }
 
   const formatCurrency = (amount: number) => {
@@ -309,7 +329,7 @@ export function ExpenseForm({ categories, paymentMethods }: ExpenseFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit">Add Expense</Button>
+        <Button type="submit">{expense ? 'Save Changes' : 'Add Expense'}</Button>
       </form>
     </Form>
   );

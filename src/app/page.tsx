@@ -1,3 +1,4 @@
+
 "use client";
 
 import { CreditCard, Landmark, Wallet } from "lucide-react";
@@ -7,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { accounts, expenses, getPaymentMethodName, categories } from "@/lib/data";
 import {
   Table,
   TableBody,
@@ -25,6 +25,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Cell, Pie, PieChart } from "recharts";
+import { useAppData } from "@/hooks/use-app-data";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-US", {
@@ -34,6 +35,7 @@ const formatCurrency = (amount: number) => {
 };
 
 export default function DashboardPage() {
+  const { accounts, expenses, categories, getPaymentMethodName } = useAppData();
   const cashBalance = accounts.find((a) => a.type === "cash")?.balance ?? 0;
   const bankBalance = accounts
     .filter((a) => a.type === "bank")
