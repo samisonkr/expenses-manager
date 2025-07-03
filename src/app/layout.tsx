@@ -3,6 +3,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
 import { AppLayout } from "@/components/layout/app-layout";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 
 export const metadata: Metadata = {
   title: "LedgerPlus",
@@ -25,8 +26,10 @@ export default function RootLayout({
         />
       </head>
       <body className={cn("font-body antialiased")}>
-        <AppLayout>{children}</AppLayout>
-        <Toaster />
+        <ThemeProvider>
+          <AppLayout>{children}</AppLayout>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
