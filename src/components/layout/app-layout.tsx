@@ -39,34 +39,33 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <Link href="/" className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              className="h-10 w-full justify-start px-2 font-headline text-lg font-semibold"
-            >
+          <Button
+            variant="ghost"
+            className="h-10 w-full justify-start px-2 font-headline text-lg font-semibold"
+            asChild
+          >
+            <Link href="/" className="flex items-center gap-2">
               <Wallet className="h-6 w-6 text-primary" />
               <span className="group-data-[collapsible=icon]:hidden">
                 LedgerPlus
               </span>
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
             {navItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href} legacyBehavior passHref>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.href}
-                    tooltip={{ children: item.label }}
-                  >
-                    <a>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </Link>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === item.href}
+                  tooltip={{ children: item.label }}
+                >
+                  <Link href={item.href}>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
