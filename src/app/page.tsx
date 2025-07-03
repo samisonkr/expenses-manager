@@ -19,6 +19,8 @@ import {
 import {
   ChartConfig,
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
@@ -159,10 +161,10 @@ export default function DashboardPage() {
             Expenses by Category
           </h2>
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="p-6">
               <ChartContainer
                 config={chartConfig}
-                className="mx-auto aspect-square max-h-[300px]"
+                className="mx-auto aspect-square h-full max-h-[250px]"
               >
                 <PieChart>
                   <ChartTooltip
@@ -183,6 +185,10 @@ export default function DashboardPage() {
                       />
                     ))}
                   </Pie>
+                  <ChartLegend
+                    content={<ChartLegendContent />}
+                    className="-mt-4 flex-wrap justify-center gap-y-1"
+                  />
                 </PieChart>
               </ChartContainer>
             </CardContent>
