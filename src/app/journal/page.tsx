@@ -26,11 +26,12 @@ const formatCurrency = (amount: number) => {
 };
 
 export default function JournalPage() {
-  const { expenses, incomes, getCategoryName, getSubcategoryName, getPaymentMethodName } = useAppData();
+  const { expenses, incomes, transfers, getCategoryName, getSubcategoryName, getPaymentMethodName, getAccountName } = useAppData();
 
   const transactions = [
     ...expenses.map((e) => ({ ...e, type: "expense" as const })),
     ...incomes.map((i) => ({ ...i, type: "income" as const })),
+    ...transfers.map((t) => ({ ...t, type: "transfer" as const })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
@@ -46,18 +47,40 @@ export default function JournalPage() {
               <TableRow>
                 <TableHead className="w-[120px]">Date</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead>Category</TableHead>
+                <TableHead>Category / Type</TableHead>
                 <TableHead>Account</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {transactions.map((tx) => {
-                const category = getCategoryName(tx.categoryId);
-                const subcategory = getSubcategoryName(
-                  tx.categoryId,
-                  tx.subcategoryId
-                );
+                let category, account, amountDisplay;
+                const isExpense = tx.type === "expense";
+                const isIncome = tx.type === "income";
+                const isTransfer = tx.type === "transfer";
+
+                if (isExpense) {
+                  const subcategory = getSubcategoryName(
+                    tx.categoryId,
+                    tx.subcategoryId
+                  );
+                  category = `${getCategoryName(tx.categoryId)}: ${subcategory}`;
+                  account = getPaymentMethodName(tx.paymentMethodId);
+                  amountDisplay = `-${formatCurrency(tx.amount)}`;
+                } else if (isIncome) {
+                    const subcategory = getSubcategoryName(
+                        tx.categoryId,
+                        tx.subcategoryId
+                      );
+                      category = `${getCategoryName(tx.categoryId)}: ${subcategory}`;
+                      account = getPaymentMethodName(tx.paymentMethodId);
+                      amountDisplay = `+${formatCurrency(tx.amount)}`;
+                } else if (isTransfer) {
+                  category = "Transfer";
+                  account = `${getAccountName(tx.fromAccountId)} → ${getAccountName(tx.toAccountId)}`;
+                  amountDisplay = formatCurrency(tx.amount);
+                }
+
                 return (
                   <TableRow key={tx.id}>
                     <TableCell>
@@ -65,21 +88,19 @@ export default function JournalPage() {
                     </TableCell>
                     <TableCell className="font-medium">{tx.description}</TableCell>
                     <TableCell>
-                      {category}: {subcategory}
+                      {category}
                     </TableCell>
                     <TableCell>
-                      {getPaymentMethodName(tx.paymentMethodId)}
+                      {account}
                     </TableCell>
                     <TableCell
                       className={cn(
                         "text-right font-mono",
-                        tx.type === "income"
-                          ? "text-primary"
-                          : "text-destructive"
+                        isIncome && "text-primary",
+                        isExpense && "text-destructive"
                       )}
                     >
-                      {tx.type === "income" ? "+" : "-"}
-                      {formatCurrency(tx.amount)}
+                      {amountDisplay}
                     </TableCell>
                   </TableRow>
                 );

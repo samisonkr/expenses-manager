@@ -1,4 +1,4 @@
-import type { Account, Category, Expense, Income, PaymentMethod } from "./types";
+import type { Account, Category, Expense, Income, PaymentMethod, Transfer } from "./types";
 
 export const accounts: Account[] = [
   { id: "acc_cash", name: "Cash", type: "cash", balance: 500 },
@@ -170,3 +170,5 @@ export const incomes: Income[] = [
     paymentMethodId: "pm_cash",
   },
 ];
+
+export const transfers: Transfer[] = [];

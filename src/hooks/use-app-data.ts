@@ -9,12 +9,14 @@ import {
   expenses as initialExpenses,
   incomes as initialIncomes,
   paymentMethods as initialPaymentMethods,
+  transfers as initialTransfers,
 } from "@/lib/data"
-import type { Account, Category, Expense, Income, PaymentMethod, Subcategory } from "@/lib/types"
+import type { Account, Category, Expense, Income, PaymentMethod, Subcategory, Transfer } from "@/lib/types"
 
 export function useAppData() {
   const [expenses, setExpenses] = useLocalStorage<Expense[]>("expenses", initialExpenses)
   const [incomes, setIncomes] = useLocalStorage<Income[]>("incomes", initialIncomes)
+  const [transfers, setTransfers] = useLocalStorage<Transfer[]>("transfers", initialTransfers)
   const [categories, setCategories] = useLocalStorage<Category[]>("expense-categories", initialCategories)
   const [incomeCategories, setIncomeCategories] = useLocalStorage<Category[]>("income-categories", initialIncomeCategories)
   const [accounts, setAccounts] = useLocalStorage<Account[]>("accounts", initialAccounts)
@@ -29,6 +31,7 @@ export function useAppData() {
       ?.subcategories.find((s) => s.id === subId)?.name ?? "N/A";
   const getPaymentMethodName = (id: string) =>
     paymentMethods.find((p) => p.id === id)?.name ?? "N/A";
+  const getAccountName = (id: string) => accounts.find((a) => a.id === id)?.name ?? "N/A";
 
   // Expense functions
   const addExpense = (expenseData: Omit<Expense, "id" | "date"> & { date: Date }) => {
@@ -105,9 +108,31 @@ export function useAppData() {
     }
   };
 
+  // Transfer functions
+  const addTransfer = (transferData: Omit<Transfer, "id" | "date"> & { date: Date }) => {
+    const newTransfer: Transfer = {
+      ...transferData,
+      id: `trn_${Date.now()}`,
+      date: transferData.date.toISOString().split("T")[0],
+    };
+
+    setTransfers(prev => [newTransfer, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+
+    setAccounts(prevAccounts => prevAccounts.map(account => {
+      if (account.id === newTransfer.fromAccountId) {
+        return { ...account, balance: account.balance - newTransfer.amount };
+      }
+      if (account.id === newTransfer.toAccountId) {
+        return { ...account, balance: account.balance + newTransfer.amount };
+      }
+      return account;
+    }));
+  };
+
   return {
     expenses, addExpense, updateExpense, deleteExpense,
     incomes, addIncome, updateIncome, deleteIncome,
+    transfers, addTransfer,
     categories, incomeCategories, addCategory, addSubcategory,
     accounts, setAccounts,
     paymentMethods, setPaymentMethods,
@@ -115,5 +140,6 @@ export function useAppData() {
     getCategoryName,
     getSubcategoryName,
     getPaymentMethodName,
+    getAccountName,
   }
 }

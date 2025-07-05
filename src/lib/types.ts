@@ -43,3 +43,12 @@ export interface Income {
   subcategoryId: string;
   paymentMethodId: string; // The account where income is deposited
 }
+
+export interface Transfer {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  fromAccountId: string;
+  toAccountId: string;
+}
