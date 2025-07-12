@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -10,7 +11,9 @@ import {
   TrendingUp,
   PiggyBank,
   TrendingDown,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "@/components/auth/auth-provider";
 
 import {
   SidebarProvider,
@@ -22,6 +25,7 @@ import {
   SidebarMenuButton,
   SidebarInset,
   SidebarTrigger,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 
@@ -36,6 +40,27 @@ const navItems = [
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, loading, signOut } = useAuth();
+
+  if (pathname === "/login") {
+    return <>{children}</>;
+  }
+  
+  if (loading) {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <PiggyBank className="h-12 w-12 animate-bounce" />
+                <p>Loading your financial dashboard...</p>
+            </div>
+        </div>
+    );
+  }
+
+  if (!user) {
+    // This should be handled by the AuthProvider redirect, but as a fallback
+    return null;
+  }
 
   return (
     <SidebarProvider>
@@ -74,6 +99,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             ))}
           </SidebarMenu>
         </SidebarContent>
+        <SidebarFooter>
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={signOut} tooltip={{ children: "Sign Out" }}>
+                        <LogOut />
+                        <span>Sign Out</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+        </SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">

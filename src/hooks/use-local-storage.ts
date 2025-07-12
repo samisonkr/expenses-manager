@@ -8,25 +8,32 @@ export function useLocalStorage<T>(
   key: string,
   initialValue: T
 ): [T, Dispatch<SetStateAction<T>>] {
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    // Prevent build errors from server-side rendering
-    if (typeof window === "undefined") {
-      return initialValue
-    }
-    try {
-      const item = window.localStorage.getItem(key)
-      return item ? JSON.parse(item) : initialValue
-    } catch (error) {
-      console.error(error)
-      return initialValue
-    }
-  })
+  const [storedValue, setStoredValue] = useState<T>(initialValue);
 
+  // We only want to run this effect on the client
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(key, JSON.stringify(storedValue))
+    try {
+      const item = window.localStorage.getItem(key);
+      setStoredValue(item ? JSON.parse(item) : initialValue);
+    } catch (error) {
+      console.error(error);
+      setStoredValue(initialValue);
     }
-  }, [key, storedValue])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  return [storedValue, setStoredValue]
+  const setValue: Dispatch<SetStateAction<T>> = (value) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+
+  return [storedValue, setValue];
 }

@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
 import { AppLayout } from "@/components/layout/app-layout";
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import { AuthProvider } from "@/components/auth/auth-provider";
 
 export const metadata: Metadata = {
   title: "Expenses Manager",
@@ -32,8 +33,10 @@ export default function RootLayout({
       </head>
       <body className={cn("font-body antialiased")}>
         <ThemeProvider>
-          <AppLayout>{children}</AppLayout>
-          <Toaster />
+          <AuthProvider>
+            <AppLayout>{children}</AppLayout>
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

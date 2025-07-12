@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/chart";
 import { Cell, Pie, PieChart } from "recharts";
 import { useAppData } from "@/hooks/use-app-data";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-US", {
@@ -36,7 +37,12 @@ const formatCurrency = (amount: number) => {
 };
 
 export default function DashboardPage() {
-  const { accounts, expenses, categories, getPaymentMethodName } = useAppData();
+  const { accounts, expenses, categories, getPaymentMethodName, loading } = useAppData();
+
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
+
   const cashBalance = accounts.find((a) => a.type === "cash")?.balance ?? 0;
   const bankBalance = accounts
     .filter((a) => a.type === "bank")
@@ -139,7 +145,7 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentExpenses.map((expense) => (
+                {recentExpenses.length > 0 ? recentExpenses.map((expense) => (
                   <TableRow key={expense.id}>
                     <TableCell className="font-medium">
                       {expense.description}
@@ -154,7 +160,11 @@ export default function DashboardPage() {
                       {formatCurrency(expense.amount)}
                     </TableCell>
                   </TableRow>
-                ))}
+                )) : (
+                    <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">No recent expenses.</TableCell>
+                    </TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
@@ -165,43 +175,126 @@ export default function DashboardPage() {
           </h2>
           <Card>
             <CardContent className="p-6">
-              <ChartContainer
-                config={chartConfig}
-                className="mx-auto aspect-square h-full max-h-[250px]"
-              >
-                <PieChart>
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
-                  />
-                  <Pie
-                    data={chartData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={60}
-                    strokeWidth={5}
-                  >
-                    {chartData.map((entry) => (
-                      <Cell
-                        key={`cell-${entry.name}`}
-                        fill={
-                          entry.name in chartConfig
-                            ? chartConfig[entry.name].color
-                            : ""
-                        }
-                      />
-                    ))}
-                  </Pie>
-                  <ChartLegend
-                    content={<ChartLegendContent />}
-                    className="-mt-4 flex-wrap justify-center gap-y-1"
-                  />
-                </PieChart>
-              </ChartContainer>
+              {chartData.length > 0 ? (
+                <ChartContainer
+                    config={chartConfig}
+                    className="mx-auto aspect-square h-full max-h-[250px]"
+                >
+                    <PieChart>
+                    <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent hideLabel />}
+                    />
+                    <Pie
+                        data={chartData}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={60}
+                        strokeWidth={5}
+                    >
+                        {chartData.map((entry) => (
+                        <Cell
+                            key={`cell-${entry.name}`}
+                            fill={
+                            entry.name in chartConfig
+                                ? chartConfig[entry.name].color
+                                : ""
+                            }
+                        />
+                        ))}
+                    </Pie>
+                    <ChartLegend
+                        content={<ChartLegendContent />}
+                        className="-mt-4 flex-wrap justify-center gap-y-1"
+                    />
+                    </PieChart>
+                </ChartContainer>
+              ) : (
+                <div className="flex h-[250px] items-center justify-center text-muted-foreground">
+                    No expense data for chart.
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
     </div>
   );
+}
+
+function DashboardSkeleton() {
+    return (
+        <div className="flex flex-1 flex-col gap-6">
+            <Skeleton className="h-8 w-48" />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-7 w-32" />
+                        <Skeleton className="mt-2 h-3 w-40" />
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-4 w-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-7 w-36" />
+                        <Skeleton className="mt-2 h-3 w-32" />
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-4 w-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-7 w-24" />
+                        <Skeleton className="mt-2 h-3 w-36" />
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+                <div className="lg:col-span-3">
+                    <Skeleton className="h-7 w-40 mb-4" />
+                    <Card>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead><Skeleton className="h-5 w-24"/></TableHead>
+                                    <TableHead><Skeleton className="h-5 w-20"/></TableHead>
+                                    <TableHead><Skeleton className="h-5 w-32"/></TableHead>
+                                    <TableHead className="text-right"><Skeleton className="h-5 w-16 ml-auto"/></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {[...Array(5)].map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-5 w-36"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-28"/></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto"/></TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </Card>
+                </div>
+                <div className="lg:col-span-2">
+                    <Skeleton className="h-7 w-48 mb-4" />
+                    <Card>
+                        <CardContent className="p-6">
+                            <div className="mx-auto aspect-square h-full max-h-[250px] flex items-center justify-center">
+                                <Skeleton className="h-48 w-48 rounded-full" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        </div>
+    );
 }

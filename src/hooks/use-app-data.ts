@@ -1,59 +1,128 @@
 
 "use client"
 
-import { useLocalStorage } from "./use-local-storage"
-import {
-  accounts as initialAccounts,
-  categories as initialCategories,
-  incomeCategories as initialIncomeCategories,
-  expenses as initialExpenses,
-  incomes as initialIncomes,
-  paymentMethods as initialPaymentMethods,
-  transfers as initialTransfers,
-} from "@/lib/data"
+import { useState, useEffect, useCallback } from "react"
+import { useAuth } from "@/components/auth/auth-provider"
+import { db } from "@/lib/firebase"
+import { doc, getDoc, setDoc } from "firebase/firestore"
 import type { Account, Category, Expense, Income, PaymentMethod, Subcategory, Transfer } from "@/lib/types"
 
-export function useAppData() {
-  const [expenses, setExpenses] = useLocalStorage<Expense[]>("expenses", initialExpenses)
-  const [incomes, setIncomes] = useLocalStorage<Income[]>("incomes", initialIncomes)
-  const [transfers, setTransfers] = useLocalStorage<Transfer[]>("transfers", initialTransfers)
-  const [categories, setCategories] = useLocalStorage<Category[]>("expense-categories", initialCategories)
-  const [incomeCategories, setIncomeCategories] = useLocalStorage<Category[]>("income-categories", initialIncomeCategories)
-  const [accounts, setAccounts] = useLocalStorage<Account[]>("accounts", initialAccounts)
-  const [paymentMethods, setPaymentMethods] = useLocalStorage<PaymentMethod[]>("payment-methods", initialPaymentMethods)
+type DataCollections = {
+  expenses: Expense[];
+  incomes: Income[];
+  transfers: Transfer[];
+  'expense-categories': Category[];
+  'income-categories': Category[];
+  accounts: Account[];
+  'payment-methods': PaymentMethod[];
+}
 
-  const allCategories = [...categories, ...incomeCategories]
-  
+export function useAppData() {
+  const { user } = useAuth();
+  const [data, setData] = useState<DataCollections>({
+    expenses: [],
+    incomes: [],
+    transfers: [],
+    'expense-categories': [],
+    'income-categories': [],
+    accounts: [],
+    'payment-methods': [],
+  });
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = useCallback(async (collectionName: keyof DataCollections) => {
+    if (!user) return [];
+    try {
+      const docRef = doc(db, `users/${user.uid}/data`, collectionName);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return docSnap.data().items || [];
+      }
+      return [];
+    } catch (error) {
+      console.error(`Error fetching ${collectionName}:`, error);
+      return [];
+    }
+  }, [user]);
+
+  const saveData = useCallback(async (collectionName: keyof DataCollections, items: any[]) => {
+    if (!user) return;
+    try {
+      const docRef = doc(db, `users/${user.uid}/data`, collectionName);
+      await setDoc(docRef, { items });
+    } catch (error) {
+      console.error(`Error saving ${collectionName}:`, error);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+        setLoading(false);
+        return;
+    };
+    
+    setLoading(true);
+    const fetchAllData = async () => {
+      const collections: (keyof DataCollections)[] = [
+        'expenses', 'incomes', 'transfers', 
+        'expense-categories', 'income-categories', 
+        'accounts', 'payment-methods'
+      ];
+      const allData = await Promise.all(
+        collections.map(name => fetchData(name))
+      );
+      setData({
+        expenses: allData[0],
+        incomes: allData[1],
+        transfers: allData[2],
+        'expense-categories': allData[3],
+        'income-categories': allData[4],
+        accounts: allData[5],
+        'payment-methods': allData[6],
+      });
+      setLoading(false);
+    };
+    fetchAllData();
+  }, [user, fetchData]);
+
+  const allCategories = [...data['expense-categories'], ...data['income-categories']];
+
   const getCategoryName = (id: string) => allCategories.find((c) => c.id === id)?.name ?? "N/A";
   const getSubcategoryName = (catId: string, subId: string) =>
     allCategories
       .find((c) => c.id === catId)
       ?.subcategories.find((s) => s.id === subId)?.name ?? "N/A";
   const getPaymentMethodName = (id: string) =>
-    paymentMethods.find((p) => p.id === id)?.name ?? "N/A";
-  const getAccountName = (id: string) => accounts.find((a) => a.id === id)?.name ?? "N/A";
+    data['payment-methods'].find((p) => p.id === id)?.name ?? "N/A";
+  const getAccountName = (id: string) => data.accounts.find((a) => a.id === id)?.name ?? "N/A";
 
+  const updateCollection = async <T>(name: keyof DataCollections, updateFn: (prev: T[]) => T[]) => {
+      const currentItems = (data[name] as T[]) || [];
+      const updatedItems = updateFn(currentItems);
+      setData(prev => ({ ...prev, [name]: updatedItems }));
+      await saveData(name, updatedItems);
+  };
+  
   // Expense functions
   const addExpense = (expenseData: Omit<Expense, "id" | "date"> & { date: Date }) => {
     const newExpense: Expense = {
       ...expenseData,
       id: `exp_${Date.now()}`,
       date: expenseData.date.toISOString().split("T")[0],
-    }
-    setExpenses((prev) => [newExpense, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
-  }
+    };
+    updateCollection<Expense>('expenses', prev => 
+        [newExpense, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    );
+  };
 
   const updateExpense = (expenseData: Omit<Expense, "id" | "date"> & { id: string; date: Date }) => {
-    const updatedExpense: Expense = {
-      ...expenseData,
-      date: expenseData.date.toISOString().split("T")[0],
-    }
-    setExpenses((prev) => prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e)))
-  }
+    const updatedExpense: Expense = { ...expenseData, date: expenseData.date.toISOString().split("T")[0] };
+    updateCollection<Expense>('expenses', prev => prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e)));
+  };
 
   const deleteExpense = (expenseId: string) => {
-    setExpenses((prev) => prev.filter((e) => e.id !== expenseId))
-  }
+    updateCollection<Expense>('expenses', prev => prev.filter((e) => e.id !== expenseId));
+  };
 
   // Income functions
   const addIncome = (incomeData: Omit<Income, "id" | "date"> & { date: Date }) => {
@@ -61,51 +130,41 @@ export function useAppData() {
       ...incomeData,
       id: `inc_${Date.now()}`,
       date: incomeData.date.toISOString().split("T")[0],
-    }
-    setIncomes((prev) => [newIncome, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
-  }
+    };
+    updateCollection<Income>('incomes', prev => 
+        [newIncome, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    );
+  };
 
   const updateIncome = (incomeData: Omit<Income, "id" | "date"> & { id: string; date: Date }) => {
-    const updatedIncome: Income = {
-      ...incomeData,
-      date: incomeData.date.toISOString().split("T")[0],
-    }
-    setIncomes((prev) => prev.map((i) => (i.id === updatedIncome.id ? updatedIncome : i)))
-  }
+    const updatedIncome: Income = { ...incomeData, date: incomeData.date.toISOString().split("T")[0] };
+    updateCollection<Income>('incomes', prev => prev.map((i) => (i.id === updatedIncome.id ? updatedIncome : i)));
+  };
 
   const deleteIncome = (incomeId: string) => {
-    setIncomes((prev) => prev.filter((i) => i.id !== incomeId))
-  }
-
+    updateCollection<Income>('incomes', prev => prev.filter((i) => i.id !== incomeId));
+  };
+  
   // Category functions
   const addCategory = (category: Omit<Category, 'id' | 'subcategories'>) => {
-      const newCategory: Category = {
-          ...category,
-          id: `cat_${category.name.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}`,
-          subcategories: [],
-      };
-      if (category.type === 'expense') {
-          setCategories(prev => [...prev, newCategory]);
-      } else {
-          setIncomeCategories(prev => [...prev, newCategory]);
-      }
+    const newCategory: Category = {
+      ...category,
+      id: `cat_${category.name.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}`,
+      subcategories: [],
+    };
+    const collectionName = category.type === 'expense' ? 'expense-categories' : 'income-categories';
+    updateCollection<Category>(collectionName, prev => [...prev, newCategory]);
   };
 
   const addSubcategory = (parentCategory: Category, subcategoryName: string) => {
     const newSubcategory: Subcategory = {
-        id: `sub_${subcategoryName.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}`,
-        name: subcategoryName.trim(),
+      id: `sub_${subcategoryName.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}`,
+      name: subcategoryName.trim(),
     };
-    
-    const update = (cats: Category[]) => cats.map(cat => 
+    const collectionName = parentCategory.type === "expense" ? 'expense-categories' : 'income-categories';
+    updateCollection<Category>(collectionName, cats => cats.map(cat => 
         cat.id === parentCategory.id ? { ...cat, subcategories: [...cat.subcategories, newSubcategory] } : cat
-    );
-
-    if (parentCategory.type === "expense") {
-        setCategories(update);
-    } else {
-        setIncomeCategories(update);
-    }
+    ));
   };
 
   // Transfer functions
@@ -115,10 +174,8 @@ export function useAppData() {
       id: `trn_${Date.now()}`,
       date: transferData.date.toISOString().split("T")[0],
     };
-
-    setTransfers(prev => [newTransfer, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-
-    setAccounts(prevAccounts => prevAccounts.map(account => {
+    updateCollection<Transfer>('transfers', prev => [newTransfer, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    updateCollection<Account>('accounts', prevAccounts => prevAccounts.map(account => {
       if (account.id === newTransfer.fromAccountId) {
         return { ...account, balance: account.balance - newTransfer.amount };
       }
@@ -130,16 +187,18 @@ export function useAppData() {
   };
 
   return {
-    expenses, addExpense, updateExpense, deleteExpense,
-    incomes, addIncome, updateIncome, deleteIncome,
-    transfers, addTransfer,
-    categories, incomeCategories, addCategory, addSubcategory,
-    accounts, setAccounts,
-    paymentMethods, setPaymentMethods,
+    expenses: data.expenses, addExpense, updateExpense, deleteExpense,
+    incomes: data.incomes, addIncome, updateIncome, deleteIncome,
+    transfers: data.transfers, addTransfer,
+    categories: data['expense-categories'], incomeCategories: data['income-categories'], 
+    addCategory, addSubcategory,
+    accounts: data.accounts, setAccounts: (updater) => updateCollection<Account>('accounts', updater),
+    paymentMethods: data['payment-methods'], setPaymentMethods: (updater) => updateCollection<PaymentMethod>('payment-methods', updater),
     allCategories,
     getCategoryName,
     getSubcategoryName,
     getPaymentMethodName,
     getAccountName,
-  }
+    loading,
+  };
 }
