@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User, signOut as firebaseSignOut } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { auth, db, isMock } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { accounts, categories, incomeCategories, paymentMethods } from '@/lib/data';
@@ -23,6 +23,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
+    if (isMock) {
+      // In a mocked environment, we can simulate a logged-in user.
+      const mockUser = auth.currentUser;
+      setUser(mockUser);
+      if (mockUser) {
+        checkAndSeedUserData(mockUser.uid).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+      return;
+    }
+    
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
@@ -43,7 +55,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router, pathname]);
 
   const signOut = async () => {
-    await firebaseSignOut(auth);
+    if (!isMock) {
+        await firebaseSignOut(auth);
+    }
+    // For both mock and real, redirect to login
+    setUser(null);
     router.push('/login');
   };
 

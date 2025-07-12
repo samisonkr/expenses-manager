@@ -1,7 +1,7 @@
-
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getAuth, Auth } from "firebase/auth";
+import { getFirestore, Firestore } from "firebase/firestore";
+import { createMockFirebase } from "./mock-firebase";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,9 +12,30 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
+let isMock = false;
 
-export { app, auth, db };
+// Check if all necessary Firebase config values are present
+const hasAllFirebaseKeys =
+  firebaseConfig.apiKey &&
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId;
+
+if (!hasAllFirebaseKeys && process.env.NODE_ENV === "development") {
+  console.warn(
+    "Firebase config is missing. Using mock Firebase for development. Your data will not be saved."
+  );
+  const mockFirebase = createMockFirebase();
+  app = mockFirebase.app;
+  auth = mockFirebase.auth;
+  db = mockFirebase.db;
+  isMock = true;
+} else {
+  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  auth = getAuth(app);
+  db = getFirestore(app);
+}
+
+export { app, auth, db, isMock };
