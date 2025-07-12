@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect, Dispatch, SetStateAction } from "react"
+import { useState, useEffect, Dispatch, SetStateAction, useCallback } from "react"
 
 // A custom hook to synchronize state with localStorage
 export function useLocalStorage<T>(
@@ -12,8 +12,11 @@ export function useLocalStorage<T>(
 
   // We only want to run this effect on the client
   useEffect(() => {
+    let item;
     try {
-      const item = window.localStorage.getItem(key);
+      if (typeof window !== "undefined") {
+        item = window.localStorage.getItem(key);
+      }
       setStoredValue(item ? JSON.parse(item) : initialValue);
     } catch (error) {
       console.error(error);
@@ -22,7 +25,7 @@ export function useLocalStorage<T>(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const setValue: Dispatch<SetStateAction<T>> = (value) => {
+  const setValue: Dispatch<SetStateAction<T>> = useCallback((value) => {
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
@@ -32,7 +35,7 @@ export function useLocalStorage<T>(
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [key, storedValue]);
 
 
   return [storedValue, setValue];

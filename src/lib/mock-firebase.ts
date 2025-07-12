@@ -1,9 +1,13 @@
+
 /**
  * @fileoverview
  * This file creates a mock instance of Firebase Auth and Firestore.
  * It's used during development when Firebase credentials are not available,
  * allowing the app to run without crashing. Data is stored in-memory
  * and is not persisted across reloads.
+ * This file is no longer used, as we now handle missing credentials
+ * in firebase.ts and rely on a guest mode with local storage.
+ * It is kept for reference but can be safely removed.
  */
 import type { FirebaseApp } from "firebase/app";
 import type { Auth, User } from "firebase/auth";

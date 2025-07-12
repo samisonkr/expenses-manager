@@ -6,6 +6,8 @@ import { useAuth } from "@/components/auth/auth-provider"
 import { db } from "@/lib/firebase"
 import { doc, getDoc, setDoc } from "firebase/firestore"
 import type { Account, Category, Expense, Income, PaymentMethod, Subcategory, Transfer } from "@/lib/types"
+import { accounts as defaultAccounts, categories as defaultCategories, incomeCategories as defaultIncomeCategories, paymentMethods as defaultPaymentMethods } from "@/lib/data"
+import { useLocalStorage } from "./use-local-storage"
 
 type DataCollections = {
   expenses: Expense[];
@@ -17,73 +19,135 @@ type DataCollections = {
   'payment-methods': PaymentMethod[];
 }
 
+const collectionNames: (keyof DataCollections)[] = [
+  'expenses', 'incomes', 'transfers', 
+  'expense-categories', 'income-categories', 
+  'accounts', 'payment-methods'
+];
+
+const defaultData: DataCollections = {
+  'expense-categories': defaultCategories,
+  'income-categories': defaultIncomeCategories,
+  'accounts': defaultAccounts,
+  'payment-methods': defaultPaymentMethods,
+  expenses: [],
+  incomes: [],
+  transfers: [],
+};
+
+// This new hook manages data source based on auth state
 export function useAppData() {
-  const { user } = useAuth();
-  const [data, setData] = useState<DataCollections>({
-    expenses: [],
-    incomes: [],
-    transfers: [],
-    'expense-categories': [],
-    'income-categories': [],
-    accounts: [],
-    'payment-methods': [],
-  });
+  const { user, authMode } = useAuth();
+  
+  // States for local and firestore data
+  const [localData, setLocalData] = useState<DataCollections | null>(null);
+  const [firestoreData, setFirestoreData] = useState<DataCollections | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async (collectionName: keyof DataCollections) => {
+  // --- Local Storage Management for Guest Mode ---
+  const [localExpenses, setLocalExpenses] = useLocalStorage<Expense[]>('app-data-expenses', defaultData.expenses);
+  const [localIncomes, setLocalIncomes] = useLocalStorage<Income[]>('app-data-incomes', defaultData.incomes);
+  const [localTransfers, setLocalTransfers] = useLocalStorage<Transfer[]>('app-data-transfers', defaultData.transfers);
+  const [localExpenseCategories, setLocalExpenseCategories] = useLocalStorage<Category[]>('app-data-expense-categories', defaultData['expense-categories']);
+  const [localIncomeCategories, setLocalIncomeCategories] = useLocalStorage<Category[]>('app-data-income-categories', defaultData['income-categories']);
+  const [localAccounts, setLocalAccounts] = useLocalStorage<Account[]>('app-data-accounts', defaultData.accounts);
+  const [localPaymentMethods, setLocalPaymentMethods] = useLocalStorage<PaymentMethod[]>('app-data-payment-methods', defaultData['payment-methods']);
+
+  useEffect(() => {
+    if (authMode === 'guest') {
+      setLocalData({
+        expenses: localExpenses,
+        incomes: localIncomes,
+        transfers: localTransfers,
+        'expense-categories': localExpenseCategories,
+        'income-categories': localIncomeCategories,
+        accounts: localAccounts,
+        'payment-methods': localPaymentMethods,
+      });
+    }
+  }, [authMode, localExpenses, localIncomes, localTransfers, localExpenseCategories, localIncomeCategories, localAccounts, localPaymentMethods]);
+
+  // --- Firestore Management for Authenticated Mode ---
+  const fetchFromFirestore = useCallback(async (collectionName: keyof DataCollections) => {
     if (!user) return [];
     try {
       const docRef = doc(db, `users/${user.uid}/data`, collectionName);
       const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        return docSnap.data().items || [];
-      }
-      return [];
+      return docSnap.exists() ? docSnap.data().items || [] : defaultData[collectionName] || [];
     } catch (error) {
-      console.error(`Error fetching ${collectionName}:`, error);
-      return [];
+      console.error(`Error fetching ${collectionName} from Firestore:`, error);
+      return defaultData[collectionName] || [];
     }
   }, [user]);
 
-  const saveData = useCallback(async (collectionName: keyof DataCollections, items: any[]) => {
+  const saveToFirestore = useCallback(async (collectionName: keyof DataCollections, items: any[]) => {
     if (!user) return;
     try {
       const docRef = doc(db, `users/${user.uid}/data`, collectionName);
       await setDoc(docRef, { items });
     } catch (error) {
-      console.error(`Error saving ${collectionName}:`, error);
+      console.error(`Error saving ${collectionName} to Firestore:`, error);
     }
   }, [user]);
 
   useEffect(() => {
-    if (!user) {
+    if (authMode === 'authenticated' && user) {
+      setLoading(true);
+      const fetchAllData = async () => {
+        const allData = await Promise.all(
+          collectionNames.map(name => fetchFromFirestore(name))
+        );
+        setFirestoreData({
+          expenses: allData[0],
+          incomes: allData[1],
+          transfers: allData[2],
+          'expense-categories': allData[3],
+          'income-categories': allData[4],
+          accounts: allData[5],
+          'payment-methods': allData[6],
+        });
         setLoading(false);
-        return;
-    };
-    
-    setLoading(true);
-    const fetchAllData = async () => {
-      const collections: (keyof DataCollections)[] = [
-        'expenses', 'incomes', 'transfers', 
-        'expense-categories', 'income-categories', 
-        'accounts', 'payment-methods'
-      ];
-      const allData = await Promise.all(
-        collections.map(name => fetchData(name))
-      );
-      setData({
-        expenses: allData[0],
-        incomes: allData[1],
-        transfers: allData[2],
-        'expense-categories': allData[3],
-        'income-categories': allData[4],
-        accounts: allData[5],
-        'payment-methods': allData[6],
-      });
-      setLoading(false);
-    };
-    fetchAllData();
-  }, [user, fetchData]);
+      };
+      fetchAllData();
+    }
+  }, [authMode, user, fetchFromFirestore]);
+  
+  // --- Unified Data Source Logic ---
+  const data = authMode === 'guest' ? localData : firestoreData;
+
+  useEffect(() => {
+    if (authMode !== 'loading') {
+      if (authMode === 'guest' && localData) setLoading(false);
+      if (authMode === 'authenticated' && firestoreData) setLoading(false);
+    } else {
+      setLoading(true);
+    }
+  }, [authMode, localData, firestoreData]);
+
+
+  const updateCollection = async <T>(name: keyof DataCollections, updateFn: (prev: T[]) => T[]) => {
+      if (authMode === 'guest') {
+          const setters: Record<keyof DataCollections, Function> = {
+            expenses: setLocalExpenses,
+            incomes: setLocalIncomes,
+            transfers: setLocalTransfers,
+            'expense-categories': setLocalExpenseCategories,
+            'income-categories': setLocalIncomeCategories,
+            accounts: setLocalAccounts,
+            'payment-methods': setLocalPaymentMethods,
+          };
+          setters[name]((prev: T[]) => updateFn(prev || []));
+      } else if (authMode === 'authenticated' && data) {
+          const currentItems = (data[name] as T[]) || [];
+          const updatedItems = updateFn(currentItems);
+          setFirestoreData(prev => prev ? ({ ...prev, [name]: updatedItems }) : null);
+          await saveToFirestore(name, updatedItems);
+      }
+  };
+
+  if (loading || !data) {
+    return { loading: true, expenses: [], incomes: [], transfers: [], categories: [], incomeCategories: [], accounts: [], paymentMethods: [], allCategories: [], addExpense: () => {}, updateExpense: () => {}, deleteExpense: () => {}, addIncome: () => {}, updateIncome: () => {}, deleteIncome: () => {}, addTransfer: () => {}, addCategory: () => {}, addSubcategory: () => {}, setAccounts: () => {}, setPaymentMethods: () => {}, getCategoryName: () => '', getSubcategoryName: () => '', getPaymentMethodName: () => '', getAccountName: () => '' };
+  }
 
   const allCategories = [...data['expense-categories'], ...data['income-categories']];
 
@@ -96,13 +160,6 @@ export function useAppData() {
     data['payment-methods'].find((p) => p.id === id)?.name ?? "N/A";
   const getAccountName = (id: string) => data.accounts.find((a) => a.id === id)?.name ?? "N/A";
 
-  const updateCollection = async <T>(name: keyof DataCollections, updateFn: (prev: T[]) => T[]) => {
-      const currentItems = (data[name] as T[]) || [];
-      const updatedItems = updateFn(currentItems);
-      setData(prev => ({ ...prev, [name]: updatedItems }));
-      await saveData(name, updatedItems);
-  };
-  
   // Expense functions
   const addExpense = (expenseData: Omit<Expense, "id" | "date"> & { date: Date }) => {
     const newExpense: Expense = {
@@ -114,12 +171,10 @@ export function useAppData() {
         [newExpense, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     );
   };
-
   const updateExpense = (expenseData: Omit<Expense, "id" | "date"> & { id: string; date: Date }) => {
     const updatedExpense: Expense = { ...expenseData, date: expenseData.date.toISOString().split("T")[0] };
     updateCollection<Expense>('expenses', prev => prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e)));
   };
-
   const deleteExpense = (expenseId: string) => {
     updateCollection<Expense>('expenses', prev => prev.filter((e) => e.id !== expenseId));
   };
@@ -135,12 +190,10 @@ export function useAppData() {
         [newIncome, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     );
   };
-
   const updateIncome = (incomeData: Omit<Income, "id" | "date"> & { id: string; date: Date }) => {
     const updatedIncome: Income = { ...incomeData, date: incomeData.date.toISOString().split("T")[0] };
     updateCollection<Income>('incomes', prev => prev.map((i) => (i.id === updatedIncome.id ? updatedIncome : i)));
   };
-
   const deleteIncome = (incomeId: string) => {
     updateCollection<Income>('incomes', prev => prev.filter((i) => i.id !== incomeId));
   };
@@ -155,7 +208,6 @@ export function useAppData() {
     const collectionName = category.type === 'expense' ? 'expense-categories' : 'income-categories';
     updateCollection<Category>(collectionName, prev => [...prev, newCategory]);
   };
-
   const addSubcategory = (parentCategory: Category, subcategoryName: string) => {
     const newSubcategory: Subcategory = {
       id: `sub_${subcategoryName.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}`,

@@ -1,7 +1,7 @@
+
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
-import { createMockFirebase } from "./mock-firebase";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -15,7 +15,6 @@ const firebaseConfig = {
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
-let isMock = false;
 
 // Check if all necessary Firebase config values are present
 const hasAllFirebaseKeys =
@@ -23,19 +22,16 @@ const hasAllFirebaseKeys =
   firebaseConfig.authDomain &&
   firebaseConfig.projectId;
 
-if (!hasAllFirebaseKeys && process.env.NODE_ENV === "development") {
-  console.warn(
-    "Firebase config is missing. Using mock Firebase for development. Your data will not be saved."
-  );
-  const mockFirebase = createMockFirebase();
-  app = mockFirebase.app;
-  auth = mockFirebase.auth;
-  db = mockFirebase.db;
-  isMock = true;
+if (hasAllFirebaseKeys) {
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    auth = getAuth(app);
+    db = getFirestore(app);
 } else {
-  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  auth = getAuth(app);
-  db = getFirestore(app);
+    // A simple mock for environments without real keys, prevents crashes
+    app = { name: "mock-app", options: {} } as FirebaseApp;
+    auth = {} as Auth;
+    db = {} as Firestore;
+    console.warn("Firebase config is missing. App will work in guest-mode only with limited functionality until configured.");
 }
 
-export { app, auth, db, isMock };
+export { app, auth, db };

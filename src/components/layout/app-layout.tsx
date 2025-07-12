@@ -40,7 +40,7 @@ const navItems = [
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, loading, signOut } = useAuth();
+  const { authMode, loading, signOut } = useAuth();
 
   if (pathname === "/login") {
     return <>{children}</>;
@@ -57,9 +57,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) {
-    // This should be handled by the AuthProvider redirect, but as a fallback
-    return null;
+  // This handles the case where auth is no longer loading, but user is neither authenticated nor guest
+  // which means they should be on the login page.
+  if (authMode === 'loading') {
+    return null; 
   }
 
   return (
