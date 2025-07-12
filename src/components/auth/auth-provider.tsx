@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
-  const loading = authMode === 'loading';
+  const loading = authMode === 'loading' && pathname !== '/login';
 
   const value = { user, authMode, loading, signInWithGoogle, signOut, continueAsGuest };
 

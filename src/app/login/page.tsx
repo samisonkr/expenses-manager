@@ -9,7 +9,7 @@ import { useAuth } from '@/components/auth/auth-provider';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, loading, signInWithGoogle, continueAsGuest } = useAuth();
+  const { loading, signInWithGoogle, continueAsGuest } = useAuth();
 
   if (loading) {
     return (
