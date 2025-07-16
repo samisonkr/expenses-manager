@@ -43,7 +43,7 @@ export function CurrencySettings({ selectedCurrency, onCurrencyChange }: Currenc
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Select onValueChange={handleCurrencyChange} defaultValue={selectedCurrency}>
+        <Select onValueChange={handleCurrencyChange} value={selectedCurrency}>
           <SelectTrigger className="w-[280px]">
             <SelectValue placeholder="Select a currency" />
           </SelectTrigger>
