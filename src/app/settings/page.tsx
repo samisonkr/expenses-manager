@@ -6,9 +6,10 @@ import { ThemeSettings } from "@/components/settings/theme-settings";
 import { SyncToFirebase } from "@/components/settings/sync-to-firebase";
 import { useAppData } from "@/hooks/use-app-data";
 import { useAuth } from "@/components/auth/auth-provider";
+import { CurrencySettings } from "@/components/settings/currency-settings";
 
 export default function SettingsPage() {
-  const { accounts, categories, incomeCategories, addCategory, addSubcategory } = useAppData();
+  const { accounts, categories, incomeCategories, addCategory, addSubcategory, currency, setCurrency } = useAppData();
   const { authMode } = useAuth();
   
   return (
@@ -18,6 +19,7 @@ export default function SettingsPage() {
       </h1>
       {authMode === 'guest' && <SyncToFirebase />}
       <ThemeSettings />
+      <CurrencySettings selectedCurrency={currency} onCurrencyChange={setCurrency} />
       <PaymentMethods accounts={accounts} />
       <CategoryManagement
         expenseCategories={categories}

@@ -52,6 +52,8 @@ export function useAppData() {
   const [localIncomeCategories, setLocalIncomeCategories] = useLocalStorage<Category[]>('app-data-income-categories', defaultData['income-categories']);
   const [localAccounts, setLocalAccounts] = useLocalStorage<Account[]>('app-data-accounts', defaultData.accounts);
   const [localPaymentMethods, setLocalPaymentMethods] = useLocalStorage<PaymentMethod[]>('app-data-payment-methods', defaultData['payment-methods']);
+  const [localCurrency, setLocalCurrency] = useLocalStorage<string>('app-data-currency', 'USD');
+
 
   useEffect(() => {
     if (authMode === 'guest') {
@@ -68,6 +70,8 @@ export function useAppData() {
   }, [authMode, localExpenses, localIncomes, localTransfers, localExpenseCategories, localIncomeCategories, localAccounts, localPaymentMethods]);
 
   // --- Firestore Management for Authenticated Mode ---
+  const [firestoreCurrency, setFirestoreCurrency] = useState('USD');
+
   const fetchFromFirestore = useCallback(async (collectionName: keyof DataCollections) => {
     if (!user) return [];
     try {
@@ -90,13 +94,39 @@ export function useAppData() {
     }
   }, [user]);
 
+  const fetchSettingsFromFirestore = useCallback(async () => {
+    if (!user) return { currency: 'USD' };
+    try {
+        const docRef = doc(db, `users/${user.uid}/data`, 'settings');
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists() ? docSnap.data() : { currency: 'USD' };
+    } catch (error) {
+        console.error(`Error fetching settings from Firestore:`, error);
+        return { currency: 'USD' };
+    }
+  }, [user]);
+
+  const saveSettingsToFirestore = useCallback(async (settings: { currency: string }) => {
+    if (!user) return;
+    try {
+        const docRef = doc(db, `users/${user.uid}/data`, 'settings');
+        await setDoc(docRef, settings);
+    } catch (error) {
+        console.error(`Error saving settings to Firestore:`, error);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (authMode === 'authenticated' && user) {
       setLoading(true);
       const fetchAllData = async () => {
-        const allData = await Promise.all(
+        const allDataPromise = Promise.all(
           collectionNames.map(name => fetchFromFirestore(name))
         );
+        const settingsPromise = fetchSettingsFromFirestore();
+
+        const [allData, settings] = await Promise.all([allDataPromise, settingsPromise]);
+
         setFirestoreData({
           expenses: allData[0],
           incomes: allData[1],
@@ -106,14 +136,16 @@ export function useAppData() {
           accounts: allData[5],
           'payment-methods': allData[6],
         });
+        setFirestoreCurrency(settings.currency);
         setLoading(false);
       };
       fetchAllData();
     }
-  }, [authMode, user, fetchFromFirestore]);
+  }, [authMode, user, fetchFromFirestore, fetchSettingsFromFirestore]);
   
   // --- Unified Data Source Logic ---
   const data = authMode === 'guest' ? localData : firestoreData;
+  const currency = authMode === 'guest' ? localCurrency : firestoreCurrency;
 
   useEffect(() => {
     if (authMode !== 'loading') {
@@ -123,6 +155,15 @@ export function useAppData() {
       setLoading(true);
     }
   }, [authMode, localData, firestoreData]);
+
+  const setCurrency = async (newCurrency: string) => {
+    if (authMode === 'guest') {
+        setLocalCurrency(newCurrency);
+    } else if (authMode === 'authenticated') {
+        setFirestoreCurrency(newCurrency);
+        await saveSettingsToFirestore({ currency: newCurrency });
+    }
+  };
 
 
   const updateCollection = async <T>(name: keyof DataCollections, updateFn: (prev: T[]) => T[]) => {
@@ -146,7 +187,7 @@ export function useAppData() {
   };
 
   if (loading || !data) {
-    return { loading: true, expenses: [], incomes: [], transfers: [], categories: [], incomeCategories: [], accounts: [], paymentMethods: [], allCategories: [], addExpense: () => {}, updateExpense: () => {}, deleteExpense: () => {}, addIncome: () => {}, updateIncome: () => {}, deleteIncome: () => {}, addTransfer: () => {}, addCategory: () => {}, addSubcategory: () => {}, setAccounts: () => {}, setPaymentMethods: () => {}, getCategoryName: () => '', getSubcategoryName: () => '', getPaymentMethodName: () => '', getAccountName: () => '' };
+    return { loading: true, expenses: [], incomes: [], transfers: [], categories: [], incomeCategories: [], accounts: [], paymentMethods: [], allCategories: [], currency: 'USD', setCurrency: () => {}, addExpense: () => {}, updateExpense: () => {}, deleteExpense: () => {}, addIncome: () => {}, updateIncome: () => {}, deleteIncome: () => {}, addTransfer: () => {}, addCategory: () => {}, addSubcategory: () => {}, setAccounts: () => {}, setPaymentMethods: () => {}, getCategoryName: () => '', getSubcategoryName: () => '', getPaymentMethodName: () => '', getAccountName: () => '' };
   }
 
   const allCategories = [...data['expense-categories'], ...data['income-categories']];
@@ -247,6 +288,8 @@ export function useAppData() {
     accounts: data.accounts, setAccounts: (updater) => updateCollection<Account>('accounts', updater),
     paymentMethods: data['payment-methods'], setPaymentMethods: (updater) => updateCollection<PaymentMethod>('payment-methods', updater),
     allCategories,
+    currency,
+    setCurrency,
     getCategoryName,
     getSubcategoryName,
     getPaymentMethodName,

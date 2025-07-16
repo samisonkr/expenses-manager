@@ -55,7 +55,7 @@ interface ExpenseFormProps {
 }
 
 export function ExpenseForm({ expense, onSave }: ExpenseFormProps) {
-  const { categories, paymentMethods, addExpense, updateExpense } = useAppData();
+  const { categories, paymentMethods, addExpense, updateExpense, currency } = useAppData();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
     expense?.categoryId ?? ""
   );
@@ -93,6 +93,13 @@ export function ExpenseForm({ expense, onSave }: ExpenseFormProps) {
     setSelectedCategoryId(categoryId);
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(amount);
+  };
+
   function onSubmit(data: ExpenseFormValues) {
     if (expense) {
       updateExpense({ ...data, id: expense.id });
@@ -109,13 +116,6 @@ export function ExpenseForm({ expense, onSave }: ExpenseFormProps) {
     }
     onSave();
   }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
 
   return (
     <Form {...form}>

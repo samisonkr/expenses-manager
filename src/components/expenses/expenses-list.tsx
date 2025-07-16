@@ -51,15 +51,8 @@ import type { Expense } from "@/lib/types";
 import { ExpenseForm } from "./expense-form";
 import { useAppData } from "@/hooks/use-app-data";
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-};
-
 export function ExpensesList() {
-  const { expenses, deleteExpense, getCategoryName, getSubcategoryName, getPaymentMethodName } = useAppData();
+  const { expenses, deleteExpense, getCategoryName, getSubcategoryName, getPaymentMethodName, currency } = useAppData();
   const [filter, setFilter] = useState<"daily" | "weekly" | "monthly">(
     "monthly"
   );
@@ -68,6 +61,13 @@ export function ExpensesList() {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
 
   const { toast } = useToast();
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(amount);
+  };
 
   const filteredExpenses = useMemo(() => {
     const now = new Date();

@@ -69,19 +69,19 @@ interface PaymentMethodsProps {
   accounts: Account[];
 }
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-};
-
 export function PaymentMethods({ accounts: allAccounts }: PaymentMethodsProps) {
-  const { addTransfer } = useAppData();
+  const { addTransfer, currency } = useAppData();
   const { toast } = useToast();
 
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [accountToPay, setAccountToPay] = useState<Account | null>(null);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(amount);
+  };
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),

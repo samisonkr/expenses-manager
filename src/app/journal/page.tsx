@@ -18,15 +18,15 @@ import {
 import { useAppData } from "@/hooks/use-app-data";
 import { cn } from "@/lib/utils";
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-};
-
 export default function JournalPage() {
-  const { expenses, incomes, transfers, getCategoryName, getSubcategoryName, getPaymentMethodName, getAccountName } = useAppData();
+  const { expenses, incomes, transfers, getCategoryName, getSubcategoryName, getPaymentMethodName, getAccountName, currency } = useAppData();
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(amount);
+  };
 
   const transactions = [
     ...expenses.map((e) => ({ ...e, type: "expense" as const })),

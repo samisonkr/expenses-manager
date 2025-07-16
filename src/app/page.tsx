@@ -29,15 +29,15 @@ import { Cell, Pie, PieChart } from "recharts";
 import { useAppData } from "@/hooks/use-app-data";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-};
-
 export default function DashboardPage() {
-  const { accounts, expenses, categories, getPaymentMethodName, loading } = useAppData();
+  const { accounts, expenses, categories, getPaymentMethodName, loading, currency } = useAppData();
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(amount);
+  };
 
   if (loading) {
     return <DashboardSkeleton />;

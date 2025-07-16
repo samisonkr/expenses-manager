@@ -49,22 +49,21 @@ import type { Income } from "@/lib/types";
 import { IncomeForm } from "./income-form";
 import { useAppData } from "@/hooks/use-app-data";
 
-
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-};
-
 export function IncomesList() {
-  const { incomes, deleteIncome, getCategoryName, getSubcategoryName, getPaymentMethodName } = useAppData();
+  const { incomes, deleteIncome, getCategoryName, getSubcategoryName, getPaymentMethodName, currency } = useAppData();
   const [filter, setFilter] = useState<"monthly" | "yearly">("monthly");
   const [incomeToEdit, setIncomeToEdit] = useState<Income | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [incomeToDelete, setIncomeToDelete] = useState<Income | null>(null);
 
   const { toast } = useToast();
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(amount);
+  };
 
   const filteredIncomes = useMemo(() => {
     const now = new Date();

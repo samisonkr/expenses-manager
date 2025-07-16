@@ -55,7 +55,7 @@ interface IncomeFormProps {
 }
 
 export function IncomeForm({ income, onSave }: IncomeFormProps) {
-  const { incomeCategories, paymentMethods, addIncome, updateIncome } = useAppData();
+  const { incomeCategories, paymentMethods, addIncome, updateIncome, currency } = useAppData();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
     income?.categoryId ?? ""
   );
@@ -91,6 +91,13 @@ export function IncomeForm({ income, onSave }: IncomeFormProps) {
     setSelectedCategoryId(categoryId);
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(amount);
+  };
+
   function onSubmit(data: IncomeFormValues) {
     if (income) {
       updateIncome({ ...data, id: income.id });
@@ -107,13 +114,6 @@ export function IncomeForm({ income, onSave }: IncomeFormProps) {
     }
     onSave();
   }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
 
   return (
     <Form {...form}>
