@@ -6,10 +6,9 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   BookOpen,
-  BarChart2,
   Settings,
-  TrendingUp,
   PiggyBank,
+  TrendingUp,
   TrendingDown,
   LogOut,
 } from "lucide-react";
@@ -34,7 +33,6 @@ const navItems = [
   { href: "/journal", label: "Journal", icon: BookOpen },
   { href: "/expenses", label: "Expenses", icon: TrendingDown },
   { href: "/incomes", label: "Incomes", icon: TrendingUp },
-  { href: "/insights", label: "Insights", icon: BarChart2 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

@@ -2,15 +2,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { CalendarIcon, Sparkles } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 
 import { cn } from "@/lib/utils";
-import type { Category, Expense } from "@/lib/types";
-import { suggestSubcategories } from "@/ai/flows/suggest-subcategories";
+import type { Expense } from "@/lib/types";
 import { useAppData } from "@/hooks/use-app-data";
 
 import { Button } from "@/components/ui/button";
@@ -63,7 +62,6 @@ export function ExpenseForm({ expense, onSave }: ExpenseFormProps) {
   const [subcategories, setSubcategories] = useState<
     { id: string; name: string }[]
   >([]);
-  const [isSuggesting, setIsSuggesting] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<ExpenseFormValues>({
@@ -84,6 +82,8 @@ export function ExpenseForm({ expense, onSave }: ExpenseFormProps) {
     if (selectedCategoryId) {
       const category = categories.find((c) => c.id === selectedCategoryId);
       setSubcategories(category ? category.subcategories : []);
+    } else {
+        setSubcategories([]);
     }
   }, [selectedCategoryId, categories]);
 
@@ -91,55 +91,6 @@ export function ExpenseForm({ expense, onSave }: ExpenseFormProps) {
     form.setValue("categoryId", categoryId);
     form.setValue("subcategoryId", ""); // Reset subcategory
     setSelectedCategoryId(categoryId);
-  };
-
-  const handleSuggestSubcategories = async () => {
-    const description = form.getValues("description");
-    const categoryId = form.getValues("categoryId");
-    if (!description || !categoryId) {
-      toast({
-        variant: "destructive",
-        title: "Missing information",
-        description: "Please provide a description and select a category first.",
-      });
-      return;
-    }
-
-    setIsSuggesting(true);
-    try {
-      const category = categories.find((c) => c.id === categoryId);
-      if (!category) return;
-
-      const result = await suggestSubcategories({
-        category: category.name,
-        description,
-        exampleSubcategories: category.subcategories.map((s) => s.name),
-      });
-
-      const newSubcategories = result.subcategories.map((name) => ({
-        id: name.toLowerCase().replace(/\s+/g, "_"),
-        name,
-      }));
-      setSubcategories((prev) => [
-        ...prev,
-        ...newSubcategories.filter((ns) => !prev.some((p) => p.name === ns.name)),
-      ]);
-
-      toast({
-        title: "Suggestions ready!",
-        description:
-          "New subcategory suggestions have been added to the dropdown.",
-      });
-    } catch (error) {
-      console.error("AI suggestion failed:", error);
-      toast({
-        variant: "destructive",
-        title: "AI Suggestion Failed",
-        description: "Could not generate subcategory suggestions.",
-      });
-    } finally {
-      setIsSuggesting(false);
-    }
   };
 
   function onSubmit(data: ExpenseFormValues) {
@@ -263,24 +214,12 @@ export function ExpenseForm({ expense, onSave }: ExpenseFormProps) {
             </FormItem>
           )}
         />
-        <FormItem>
-          <div className="flex items-center justify-between">
-            <FormLabel>Subcategory</FormLabel>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleSuggestSubcategories}
-              disabled={isSuggesting || !selectedCategoryId}
-            >
-              <Sparkles className="mr-2 h-4 w-4" />
-              {isSuggesting ? "Suggesting..." : "Suggest with AI"}
-            </Button>
-          </div>
-          <Controller
-            control={form.control}
-            name="subcategoryId"
-            render={({ field }) => (
+         <FormField
+          control={form.control}
+          name="subcategoryId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Subcategory</FormLabel>
               <Select
                 onValueChange={field.onChange}
                 value={field.value}
@@ -299,12 +238,10 @@ export function ExpenseForm({ expense, onSave }: ExpenseFormProps) {
                   ))}
                 </SelectContent>
               </Select>
-            )}
-          />
-          <FormMessage>
-            {form.formState.errors.subcategoryId?.message}
-          </FormMessage>
-        </FormItem>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="paymentMethodId"
