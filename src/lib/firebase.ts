@@ -16,22 +16,41 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 
-// Check if all necessary Firebase config values are present
-const hasAllFirebaseKeys =
-  firebaseConfig.apiKey &&
-  firebaseConfig.authDomain &&
-  firebaseConfig.projectId;
+function initializeFirebase() {
+  const hasAllFirebaseKeys =
+    firebaseConfig.apiKey &&
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId &&
+    firebaseConfig.storageBucket &&
+    firebaseConfig.messagingSenderId &&
+    firebaseConfig.appId;
 
-if (hasAllFirebaseKeys) {
-    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  if (hasAllFirebaseKeys && !getApps().length) {
+    try {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+    } catch (error) {
+        console.error("Firebase initialization error:", error);
+        // Fallback to mock objects if initialization fails
+        app = { name: "mock-app", options: {} } as FirebaseApp;
+        auth = {} as Auth;
+        db = {} as Firestore;
+    }
+  } else if (getApps().length) {
+    app = getApp();
     auth = getAuth(app);
     db = getFirestore(app);
-} else {
+  } else {
     // A simple mock for environments without real keys, prevents crashes
     app = { name: "mock-app", options: {} } as FirebaseApp;
     auth = {} as Auth;
     db = {} as Firestore;
-    console.warn("Firebase config is missing. App will work in guest-mode only with limited functionality until configured.");
+    console.warn("Firebase config is incomplete. App will work in guest-mode only with limited functionality until configured.");
+  }
 }
+
+// Call the function to initialize
+initializeFirebase();
 
 export { app, auth, db };
