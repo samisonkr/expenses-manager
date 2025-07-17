@@ -16,7 +16,8 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 
-function initializeFirebase() {
+// This function now returns a boolean indicating success
+function initializeFirebase(): boolean {
   const hasAllFirebaseKeys =
     firebaseConfig.apiKey &&
     firebaseConfig.authDomain &&
@@ -25,32 +26,35 @@ function initializeFirebase() {
     firebaseConfig.messagingSenderId &&
     firebaseConfig.appId;
 
-  if (hasAllFirebaseKeys && !getApps().length) {
-    try {
-      app = initializeApp(firebaseConfig);
+  if (hasAllFirebaseKeys) {
+    if (!getApps().length) {
+      try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        return true;
+      } catch (error) {
+        console.error("Firebase initialization error:", error);
+        return false;
+      }
+    } else {
+      app = getApp();
       auth = getAuth(app);
       db = getFirestore(app);
-    } catch (error) {
-        console.error("Firebase initialization error:", error);
-        // Fallback to mock objects if initialization fails
-        app = { name: "mock-app", options: {} } as FirebaseApp;
-        auth = {} as Auth;
-        db = {} as Firestore;
+      return true;
     }
-  } else if (getApps().length) {
-    app = getApp();
-    auth = getAuth(app);
-    db = getFirestore(app);
-  } else {
-    // A simple mock for environments without real keys, prevents crashes
-    app = { name: "mock-app", options: {} } as FirebaseApp;
-    auth = {} as Auth;
-    db = {} as Firestore;
-    console.warn("Firebase config is incomplete. App will work in guest-mode only with limited functionality until configured.");
   }
+  return false;
 }
 
-// Call the function to initialize
-initializeFirebase();
+const isFirebaseInitialized = initializeFirebase();
 
-export { app, auth, db };
+if (!isFirebaseInitialized) {
+  console.warn("Firebase config is incomplete. App will work in guest-mode only.");
+  // Provide mock objects if initialization failed to prevent crashes
+  app = app || ({ name: "mock-app", options: {} } as FirebaseApp);
+  auth = auth || ({} as Auth);
+  db = db || ({} as Firestore);
+}
+
+export { app, auth, db, isFirebaseInitialized };
