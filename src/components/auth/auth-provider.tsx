@@ -1,12 +1,21 @@
 
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User, signOut as firebaseSignOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { auth, db, initializeFirebaseApp, isFirebaseInitialized as firebaseIsReady } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
 import { accounts as defaultAccounts, categories as defaultCategories, incomeCategories as defaultIncomeCategories, paymentMethods as defaultPaymentMethods } from '@/lib/data';
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
 
 type AuthMode = 'loading' | 'guest' | 'authenticated';
 
@@ -26,10 +35,30 @@ const GUEST_KEY = 'is-guest-user';
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>('loading');
+  const [isFirebaseInitialized, setIsFirebaseInitialized] = useState(firebaseIsReady);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
+    // Initialize Firebase here, within the component lifecycle
+    if (!firebaseIsReady) {
+      initializeFirebaseApp(firebaseConfig);
+      setIsFirebaseInitialized(true); // Assume initialization is attempted
+    }
+  }, []);
+
+  useEffect(() => {
+    // This effect runs only after firebase is initialized.
+    if (!isFirebaseInitialized || !auth) {
+      // If firebase isn't ready or failed to init, default to guest mode
+      const isGuest = sessionStorage.getItem(GUEST_KEY) === 'true';
+      if (!isGuest && pathname !== '/login') {
+        continueAsGuest(); // Put user in guest mode
+      }
+      setAuthMode('guest');
+      return;
+    }
+    
     const isGuest = sessionStorage.getItem(GUEST_KEY) === 'true';
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -58,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [router, pathname]);
+  }, [router, pathname, isFirebaseInitialized]);
 
 
   const continueAsGuest = () => {
@@ -68,6 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
+    if (!isFirebaseInitialized || !auth) {
+        console.error("Firebase is not initialized, cannot sign in.");
+        return;
+    }
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -79,7 +112,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     sessionStorage.removeItem(GUEST_KEY);
-    await firebaseSignOut(auth);
+    if (auth) {
+      await firebaseSignOut(auth);
+    }
     setAuthMode('loading'); // This will trigger the useEffect to redirect to /login
     setUser(null);
     router.push('/login');
@@ -105,6 +140,7 @@ export function useAuth() {
 }
 
 async function checkAndSeedUserData(userId: string) {
+  if (!db) return;
   const userDocRef = doc(db, 'users', userId);
   const userDocSnap = await getDoc(userDocRef);
 
