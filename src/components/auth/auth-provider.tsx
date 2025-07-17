@@ -8,6 +8,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
 import { accounts as defaultAccounts, categories as defaultCategories, incomeCategories as defaultIncomeCategories, paymentMethods as defaultPaymentMethods } from '@/lib/data';
 
+// This configuration is now built inside the provider
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -40,15 +41,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Initialize Firebase here, within the component lifecycle
-    if (!firebaseIsReady) {
+    // Initialize Firebase here, passing the config object
+    if (!isFirebaseInitialized) {
       initializeFirebaseApp(firebaseConfig);
-      setIsFirebaseInitialized(true); // Assume initialization is attempted
+      // We read the initialized status back from the module
+      setIsFirebaseInitialized(firebaseIsReady);
     }
-  }, []);
+  }, [isFirebaseInitialized]);
 
   useEffect(() => {
-    // This effect runs only after firebase is initialized.
+    // This effect runs only after firebase is initialized (or initialization was attempted).
     if (!isFirebaseInitialized || !auth) {
       // If firebase isn't ready or failed to init, default to guest mode
       const isGuest = sessionStorage.getItem(GUEST_KEY) === 'true';

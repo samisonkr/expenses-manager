@@ -10,6 +10,7 @@ let isFirebaseInitialized = false;
 
 // This function will now be called from the AuthProvider
 export function initializeFirebaseApp(config: object) {
+  // Check if all required keys have values.
   const hasAllKeys = Object.values(config).every(Boolean);
 
   if (hasAllKeys && !getApps().length) {
@@ -24,10 +25,14 @@ export function initializeFirebaseApp(config: object) {
       isFirebaseInitialized = false;
     }
   } else if (getApps().length) {
+      // If the app is already initialized, just get the existing instances.
       app = getApp();
       auth = getAuth(app);
       db = getFirestore(app);
       isFirebaseInitialized = true;
+  } else {
+    // If keys are missing, log a warning and do not initialize
+    console.warn("Firebase config keys are missing. Firebase will not be initialized. Running in guest mode.");
   }
 }
 
