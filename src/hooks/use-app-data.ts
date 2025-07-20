@@ -186,6 +186,21 @@ export function useAppData() {
       }
   };
 
+  const updateAccountBalance = (paymentMethodId: string, amount: number, transactionType: 'add' | 'subtract') => {
+    const paymentMethod = data?.['payment-methods'].find(pm => pm.id === paymentMethodId);
+    if (!paymentMethod || !paymentMethod.accountId) return;
+    
+    updateCollection<Account>('accounts', prevAccounts =>
+      prevAccounts.map(account => {
+        if (account.id === paymentMethod.accountId) {
+          const newBalance = transactionType === 'add' ? account.balance + amount : account.balance - amount;
+          return { ...account, balance: newBalance };
+        }
+        return account;
+      })
+    );
+  };
+
   if (loading || !data) {
     return { loading: true, expenses: [], incomes: [], transfers: [], categories: [], incomeCategories: [], accounts: [], paymentMethods: [], allCategories: [], currency: 'USD', setCurrency: () => {}, addExpense: () => {}, updateExpense: () => {}, deleteExpense: () => {}, addIncome: () => {}, updateIncome: () => {}, deleteIncome: () => {}, addTransfer: () => {}, addCategory: () => {}, addSubcategory: () => {}, setAccounts: () => {}, setPaymentMethods: () => {}, getCategoryName: () => '', getSubcategoryName: () => '', getPaymentMethodName: () => '', getAccountName: () => '' };
   }
@@ -211,12 +226,25 @@ export function useAppData() {
     updateCollection<Expense>('expenses', prev => 
         [newExpense, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     );
+    updateAccountBalance(newExpense.paymentMethodId, newExpense.amount, 'subtract');
   };
   const updateExpense = (expenseData: Omit<Expense, "id" | "date"> & { id: string; date: Date }) => {
+    const originalExpense = data.expenses.find(e => e.id === expenseData.id);
+    if (!originalExpense) return;
+
     const updatedExpense: Expense = { ...expenseData, date: expenseData.date.toISOString().split("T")[0] };
+    
+    // Revert original transaction and apply new one
+    updateAccountBalance(originalExpense.paymentMethodId, originalExpense.amount, 'add');
+    updateAccountBalance(updatedExpense.paymentMethodId, updatedExpense.amount, 'subtract');
+
     updateCollection<Expense>('expenses', prev => prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e)));
   };
   const deleteExpense = (expenseId: string) => {
+    const expenseToDelete = data.expenses.find(e => e.id === expenseId);
+    if (!expenseToDelete) return;
+    
+    updateAccountBalance(expenseToDelete.paymentMethodId, expenseToDelete.amount, 'add');
     updateCollection<Expense>('expenses', prev => prev.filter((e) => e.id !== expenseId));
   };
 
@@ -230,12 +258,25 @@ export function useAppData() {
     updateCollection<Income>('incomes', prev => 
         [newIncome, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     );
+    updateAccountBalance(newIncome.paymentMethodId, newIncome.amount, 'add');
   };
   const updateIncome = (incomeData: Omit<Income, "id" | "date"> & { id: string; date: Date }) => {
+    const originalIncome = data.incomes.find(i => i.id === incomeData.id);
+    if (!originalIncome) return;
+
     const updatedIncome: Income = { ...incomeData, date: incomeData.date.toISOString().split("T")[0] };
+
+    // Revert original and apply new
+    updateAccountBalance(originalIncome.paymentMethodId, originalIncome.amount, 'subtract');
+    updateAccountBalance(updatedIncome.paymentMethodId, updatedIncome.amount, 'add');
+
     updateCollection<Income>('incomes', prev => prev.map((i) => (i.id === updatedIncome.id ? updatedIncome : i)));
   };
   const deleteIncome = (incomeId: string) => {
+    const incomeToDelete = data.incomes.find(i => i.id === incomeId);
+    if (!incomeToDelete) return;
+
+    updateAccountBalance(incomeToDelete.paymentMethodId, incomeToDelete.amount, 'subtract');
     updateCollection<Income>('incomes', prev => prev.filter((i) => i.id !== incomeId));
   };
   
