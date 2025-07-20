@@ -11,7 +11,7 @@ export const themes = [
 ] as const;
 
 export type ThemeId = (typeof themes)[number]["id"];
-export type ThemeMode = "light" | "dark" | "system";
+export type ThemeMode = "light" | "dark";
 
 type ThemeProviderState = {
   colorTheme: ThemeId;
@@ -23,7 +23,7 @@ type ThemeProviderState = {
 const initialState: ThemeProviderState = {
   colorTheme: "default",
   setColorTheme: () => null,
-  themeMode: "system",
+  themeMode: "dark",
   setThemeMode: () => null,
 };
 
@@ -31,7 +31,7 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [colorTheme, _setColorTheme] = useState<ThemeId>("default");
-  const [themeMode, _setThemeMode] = useState<ThemeMode>("system");
+  const [themeMode, _setThemeMode] = useState<ThemeMode>("dark");
 
   // Load saved themes from localStorage on mount
   useEffect(() => {
@@ -44,9 +44,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     ) as ThemeMode;
     if (
       storedThemeMode &&
-      ["light", "dark", "system"].includes(storedThemeMode)
+      ["light", "dark"].includes(storedThemeMode)
     ) {
       _setThemeMode(storedThemeMode);
+    } else {
+      _setThemeMode('dark'); // Default to dark if nothing is stored or value is invalid
     }
   }, []);
 
@@ -61,37 +63,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.classList.add(`theme-${colorTheme}`);
 
     // Handle explicit light/dark modes
-    // The 'system' mode is handled in a separate effect
     if (themeMode === 'light') {
       root.classList.remove('dark');
-    } else if (themeMode === 'dark') {
+    } else {
       root.classList.add('dark');
     }
   }, [colorTheme, themeMode]);
-
-
-  // Effect to handle 'system' mode and listen for OS-level changes
-  useEffect(() => {
-    if (themeMode !== 'system') {
-      return;
-    }
-
-    const root = window.document.documentElement;
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-    const handleSystemChange = (e: MediaQueryListEvent) => {
-      root.classList.toggle('dark', e.matches);
-    };
-
-    // Set initial state for system mode
-    root.classList.toggle('dark', mediaQuery.matches);
-    
-    mediaQuery.addEventListener('change', handleSystemChange);
-
-    return () => {
-      mediaQuery.removeEventListener('change', handleSystemChange);
-    };
-  }, [themeMode]);
 
 
   const value = {

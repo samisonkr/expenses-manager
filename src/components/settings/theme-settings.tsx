@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Check, Sun, Moon, Laptop } from "lucide-react";
+import { Check, Sun, Moon } from "lucide-react";
 
 const ThemePreview = ({ themeId }: { themeId: ThemeId }) => (
   <div className={cn("p-2", `theme-${themeId}`)}>
@@ -75,14 +75,6 @@ export function ThemeSettings() {
               className="w-28"
             >
               <Moon className="mr-2 h-4 w-4" /> Dark
-            </Button>
-            <Button
-              size="sm"
-              variant={themeMode === "system" ? "default" : "ghost"}
-              onClick={() => setThemeMode("system")}
-              className="w-28"
-            >
-              <Laptop className="mr-2 h-4 w-4" /> System
             </Button>
           </div>
         </div>
