@@ -13,7 +13,7 @@
   .theme-default {
     --background: 210 20% 95%;
     --foreground: 222.2 84% 4.9%;
-    --card: 210 40% 96.1%;
+    --card: 210 40% 98%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
@@ -36,7 +36,7 @@
     --chart-4: 30 59% 51%;
     --chart-5: 265 53% 52%;
 
-    --sidebar-background: 210 40% 96.1%;
+    --sidebar-background: 210 25% 90%;
     --sidebar-foreground: 222.2 47.4% 11.2%;
     --sidebar-accent: 210 65% 50%;
     --sidebar-accent-foreground: 210 40% 98%;
@@ -80,7 +80,7 @@
   .theme-forest {
     --background: 210 20% 95%;
     --foreground: 222.2 84% 4.9%;
-    --card: 210 40% 96.1%;
+    --card: 210 40% 98%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
@@ -103,7 +103,7 @@
     --chart-4: 190 70% 60%;
     --chart-5: 45 95% 53%;
     
-    --sidebar-background: 210 40% 96.1%;
+    --sidebar-background: 210 25% 90%;
     --sidebar-foreground: 222.2 47.4% 11.2%;
     --sidebar-accent: 120 39% 49%;
     --sidebar-accent-foreground: 120 20% 98%;
@@ -147,7 +147,7 @@
   .theme-sunset {
     --background: 210 20% 95%;
     --foreground: 222.2 84% 4.9%;
-    --card: 210 40% 96.1%;
+    --card: 210 40% 98%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
@@ -170,7 +170,7 @@
     --chart-4: 190 70% 60%;
     --chart-5: 45 95% 53%;
 
-    --sidebar-background: 210 40% 96.1%;
+    --sidebar-background: 210 25% 90%;
     --sidebar-foreground: 222.2 47.4% 11.2%;
     --sidebar-accent: 25 95% 53%;
     --sidebar-accent-foreground: 25 40% 98%;
@@ -214,7 +214,7 @@
   .theme-ocean {
     --background: 210 20% 95%;
     --foreground: 222.2 84% 4.9%;
-    --card: 210 40% 96.1%;
+    --card: 210 40% 98%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
@@ -237,7 +237,7 @@
     --chart-4: 30 59% 51%;
     --chart-5: 265 53% 52%;
 
-    --sidebar-background: 210 40% 96.1%;
+    --sidebar-background: 210 25% 90%;
     --sidebar-foreground: 222.2 47.4% 11.2%;
     --sidebar-accent: 220 75% 55%;
     --sidebar-accent-foreground: 220 40% 98%;
@@ -281,7 +281,7 @@
   .theme-yellow {
     --background: 210 20% 95%;
     --foreground: 222.2 84% 4.9%;
-    --card: 210 40% 96.1%;
+    --card: 210 40% 98%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
@@ -304,7 +304,7 @@
     --chart-4: 190 70% 60%;
     --chart-5: 265 53% 52%;
 
-    --sidebar-background: 210 40% 96.1%;
+    --sidebar-background: 210 25% 90%;
     --sidebar-foreground: 222.2 47.4% 11.2%;
     --sidebar-accent: 45 95% 53%;
     --sidebar-accent-foreground: 45 40% 98%;
