@@ -1,21 +1,22 @@
 {
   "name": "Expenses Manager",
-  "short_name": "ExpensesMgr",
+  "short_name": "Expenses",
   "description": "Your personal expense manager, now installable on your device.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/logo.png",
+      "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait"
 }
