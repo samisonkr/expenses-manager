@@ -8,14 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useAppData } from "@/hooks/use-app-data";
 import { Separator } from "@/components/ui/separator";
 
@@ -29,23 +21,39 @@ export default function JournalPage() {
     }).format(amount);
   };
 
-  const allTransactions = [
-    ...expenses.map((e) => ({ ...e, type: "expense" as const, sortDate: new Date(e.date) })),
-    ...incomes.map((i) => ({ ...i, type: "income" as const, sortDate: new Date(i.date) })),
-    ...transfers.map((t) => ({ ...t, type: "transfer" as const, sortDate: new Date(t.date) })),
+  const debitTransactions = [
+    ...expenses.map((e) => ({ 
+      id: e.id, 
+      sortDate: new Date(e.date), 
+      description: e.description,
+      amount: e.amount 
+    })),
+    ...transfers.map((t) => ({ 
+      id: `${t.id}-debit`,
+      sortDate: new Date(t.date),
+      description: `Transfer to ${getAccountName(t.toAccountId)}`,
+      amount: t.amount,
+    })),
   ].sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime());
 
-  const totalDebits = allTransactions
-    .filter(tx => tx.type === 'expense' || tx.type === 'transfer')
-    .reduce((sum, tx) => sum + tx.amount, 0);
-  
-  const totalCredits = allTransactions
-    .filter(tx => tx.type === 'income')
-    .reduce((sum, tx) => sum + tx.amount, 0)
-    + allTransactions
-    .filter(tx => tx.type === 'transfer')
-    .reduce((sum, tx) => sum + tx.amount, 0)
+  const creditTransactions = [
+    ...incomes.map((i) => ({ 
+      id: i.id, 
+      sortDate: new Date(i.date), 
+      description: i.description,
+      amount: i.amount
+    })),
+    ...transfers.map((t) => ({
+      id: `${t.id}-credit`,
+      sortDate: new Date(t.date),
+      description: `Transfer from ${getAccountName(t.fromAccountId)}`,
+      amount: t.amount,
+    })),
+  ].sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime());
 
+
+  const totalDebits = debitTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+  const totalCredits = creditTransactions.reduce((sum, tx) => sum + tx.amount, 0);
 
   return (
     <div className="flex flex-1 flex-col gap-6">
@@ -56,86 +64,62 @@ export default function JournalPage() {
             General Journal
           </CardTitle>
           <CardDescription>
-            A chronological record of all your financial transactions.
+            A T-Account view of all your financial transactions.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead className="text-right">Debit</TableHead>
-                <TableHead className="text-right">Credit</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {allTransactions.map((tx) => {
-                let description, account, debit, credit;
+          {/* T-Account Structure */}
+          <div className="border-b-2 border-t-2 border-foreground">
+            <div className="grid grid-cols-2">
+              {/* Debit Column */}
+              <div className="border-r-2 border-foreground p-4">
+                <h3 className="mb-4 text-center font-bold text-lg">Debit (Dr)</h3>
+                <ul className="space-y-2">
+                  {debitTransactions.map((tx) => (
+                    <li key={tx.id} className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">{tx.sortDate.toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' })}</span>
+                      <span className="flex-1 px-2 truncate" title={tx.description}>{tx.description}</span>
+                      <span className="font-mono text-destructive">{formatCurrency(tx.amount)}</span>
+                    </li>
+                  ))}
+                  {debitTransactions.length === 0 && (
+                      <li className="text-center text-muted-foreground">No debit transactions.</li>
+                  )}
+                </ul>
+              </div>
 
-                if (tx.type === "expense") {
-                  description = tx.description;
-                  account = getAccountName(tx.paymentMethodId);
-                  debit = formatCurrency(tx.amount);
-                } else if (tx.type === "income") {
-                  description = tx.description;
-                  account = getAccountName(tx.paymentMethodId);
-                  credit = formatCurrency(tx.amount);
-                } else if (tx.type === "transfer") {
-                  // For a transfer, we create two rows in the view, one for debit, one for credit
-                  return (
-                    <React.Fragment key={tx.id}>
-                      <TableRow>
-                        <TableCell>{tx.sortDate.toLocaleDateString()}</TableCell>
-                        <TableCell className="font-medium">
-                          Transfer to {getAccountName(tx.toAccountId)}
-                        </TableCell>
-                        <TableCell>{getAccountName(tx.fromAccountId)}</TableCell>
-                        <TableCell className="text-right font-mono text-destructive">
-                          {formatCurrency(tx.amount)}
-                        </TableCell>
-                        <TableCell></TableCell>
-                      </TableRow>
-                       <TableRow>
-                        <TableCell></TableCell>
-                        <TableCell className="font-medium pl-6 text-muted-foreground">
-                          Transfer from {getAccountName(tx.fromAccountId)}
-                        </TableCell>
-                        <TableCell>{getAccountName(tx.toAccountId)}</TableCell>
-                        <TableCell></TableCell>
-                        <TableCell className="text-right font-mono text-primary">
-                          {formatCurrency(tx.amount)}
-                        </TableCell>
-                      </TableRow>
-                    </React.Fragment>
-                  );
-                }
-                
-                return (
-                  <TableRow key={tx.id}>
-                    <TableCell>{tx.sortDate.toLocaleDateString()}</TableCell>
-                    <TableCell className="font-medium">{description}</TableCell>
-                    <TableCell>{account}</TableCell>
-                    <TableCell className="text-right font-mono text-destructive">{debit}</TableCell>
-                    <TableCell className="text-right font-mono text-primary">{credit}</TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-          <Separator className="my-4" />
-          <div className="flex justify-end">
-              <div className="w-1/2">
-                <div className="flex justify-between font-bold text-lg p-4 border-t">
+              {/* Credit Column */}
+              <div className="p-4">
+                <h3 className="mb-4 text-center font-bold text-lg">Credit (Cr)</h3>
+                <ul className="space-y-2">
+                   {creditTransactions.map((tx) => (
+                    <li key={tx.id} className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">{tx.sortDate.toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' })}</span>
+                      <span className="flex-1 px-2 truncate" title={tx.description}>{tx.description}</span>
+                      <span className="font-mono text-primary">{formatCurrency(tx.amount)}</span>
+                    </li>
+                  ))}
+                   {creditTransactions.length === 0 && (
+                      <li className="text-center text-muted-foreground">No credit transactions.</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </div>
+           {/* Totals Section */}
+          <div className="grid grid-cols-2 mt-2">
+            <div className="border-r-2 border-foreground p-4">
+                 <div className="flex justify-between font-bold text-lg">
                     <span>Total Debits</span>
                     <span className="font-mono">{formatCurrency(totalDebits)}</span>
                 </div>
-                 <div className="flex justify-between font-bold text-lg p-4 border-t">
+            </div>
+             <div className="p-4">
+                 <div className="flex justify-between font-bold text-lg">
                     <span>Total Credits</span>
                     <span className="font-mono">{formatCurrency(totalCredits)}</span>
                 </div>
-              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
